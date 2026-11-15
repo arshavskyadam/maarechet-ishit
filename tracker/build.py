@@ -87,6 +87,11 @@ def read_sheet_tab(tab, must_have):
     return None
 
 
+def grade_of(class_name):
+    """"יא'- 2" -> "יא", "י - 6" -> "י"."""
+    return re.sub(r"[^א-ת]", "", class_name.split("-")[0])
+
+
 def site_teachers(raw):
     names = set()
     for _, cell in [e for entries in raw["slots"].values() for e in entries] + raw["regular"]:
@@ -124,6 +129,9 @@ def load_staff(raw):
             t["members"].append(person["display"])
             if r.get("ראש צוות") == "כן":
                 t["lead"] = person["display"]
+    for r in read_sheet_tab(CONFIG.get("teams_tab", "צוותים"), "שם הצוות") or []:
+        if r.get("שם הצוות") in teams:
+            teams[r["שם הצוות"]]["grades"] = [g.strip(" '\"") for g in r.get("שכבות", "").split(",") if g.strip()]
     print(f"staff from sheet: {len(staff)} people, {len(teams)} teams")
     return staff, teams
 
@@ -176,12 +184,16 @@ def build_person(person, raw, extras, now, offline, morning):
         mine = extras.get(display, []) + (extras.get(person["as_given"], []) if person["as_given"] != display else [])
         latest = scrape(name or "\u0000", raw=raw, extra_lessons=mine, homeroom=homerooms[0] if homerooms else None)
         latest["homerooms"] = [homeroom_info(raw, h) for h in homerooms]
-        # The page's "end of day" table shows the homeroom classes.
+        # The page's "end of day" table: the homeroom classes, or for a team lead every class of their grades.
+        grades = person.get("lead_grades", [])
+        shown = [c["name"] for c in raw["classes"] if grade_of(c["name"]) in grades] if grades else []
         latest["class_end"] = {}
-        for hr in latest["homerooms"]:
+        for hr in latest["homerooms"] + [homeroom_info(raw, c) for c in shown if c not in homerooms]:
             for day, info in hr["days"].items():
                 latest["class_end"].setdefault(day, []).append(
                     {"class": hr["class"], "now": info.get("last_lesson"), "regular": info.get("regular_end")})
+        for rows in latest["class_end"].values():
+            rows.sort(key=lambda r: (len(grade_of(r["class"])), r["class"]))
         found = diff(previous, latest, today) if previous else []
         for i, hr in enumerate(latest["homerooms"][1:], start=1):
             old = (previous.get("homerooms") or [None] * (i + 1))[i] if previous else None
@@ -218,7 +230,8 @@ def build_person(person, raw, extras, now, offline, morning):
 
     write_json(path, {
         "teacher": display, "source": CONFIG["site"], "roles": person.get("roles", []),
-        "ends_title": "שעת סיום · " + ("כיתות החינוך" if len(homerooms) > 1 else "כיתת החינוך") if homerooms else "",
+        "ends_title": ("שעת סיום · שכבה " + ", ".join(person["lead_grades"])) if person.get("lead_grades")
+        else ("שעת סיום · " + ("כיתות החינוך" if len(homerooms) > 1 else "כיתת החינוך") if homerooms else ""),
         "summary_sent": summary_sent, "latest": latest, "changelog": changelog,
         "history": [history[k] for k in sorted(history)],
     })
@@ -246,6 +259,11 @@ def main():
             sys.exit("scan returned no classes or days; keeping the previous data")
         extras = load_extras()
     staff, team_defs = load_staff(raw)
+    for t in team_defs.values():
+        for person in staff:
+            shown = person.get("display") or person.get("name") or " ".join(reversed(person["as_given"].split(" ", 1)))
+            if shown == t.get("lead"):
+                person["lead_grades"] = person.get("lead_grades", []) + t.get("grades", [])
     morning = args.morning or 5 <= now.hour < 8
     people = [p for p in (build_person(s, raw, extras, now, args.offline, morning) for s in staff) if p]
     if people:

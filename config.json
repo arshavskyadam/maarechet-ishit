@@ -2,10 +2,15 @@
  "site": "https://techni.shahaf.site/",
  "site_url": "",
  "extras_sheet_tab": "תוספות",
- "sheet_id": "1LdG-4i0ZIdnjinKY8wEI6eYCgNMktJkRQWbDZkRvrIE",
+ "sheet_id": "11AgQeq267joV3MHYxot3YrSCvdH2UfEf4WvLx5S_Kt4",
  "staff_tab": "אנשי צוות",
  "pin_hashes": {
-  "ארשבסקי אדם": "e1da384ff8192d2eedb7e8239754de4ee4b0449c8fbfe571ab3417b8ffd890ec"
+  "ארשבסקי אדם": "e1da384ff8192d2eedb7e8239754de4ee4b0449c8fbfe571ab3417b8ffd890ec",
+  "קריין נועה": "dfc40251faaa16b1180ddbf28c6913a02cb276a9b8f769f108f3e52ae387fc16",
+  "בוטרימוב אלכסנדרה": "652b6726dd955df209319fe9f314fe43743dd33bcaa2dea5f9f59b25d2396e16",
+  "אסולין שובל": "a965a9701e23cfa361dd3796c47727723d77fa1eea26fa780b63d4cb1824250c",
+  "ניימן אסתל": "3dfac71c5a20a07a5637420c9d73af84cc7a4f47b2df3fd786e2cd21d510b772"
  },
- "fallback_sheet_id": "1DNNu8bpesVCmtOHRBTPOe1NGYYNGYYed8CXC_HG9iDQ"
+ "fallback_sheet_id": "1DNNu8bpesVCmtOHRBTPOe1NGYYNGYYed8CXC_HG9iDQ",
+ "teams_tab": "צוותים"
 }
