@@ -236,7 +236,7 @@ def build_person(person, raw, extras, now, offline, morning):
     write_json(path, {
         "teacher": display, "source": CONFIG["site"], "roles": person.get("roles", []),
         "ends_title": ("שעת סיום · שכבה " + ", ".join(person["lead_grades"])) if person.get("lead_grades")
-        else ("שעת סיום · " + ("כיתות החינוך" if len(homerooms) > 1 else "כיתת החינוך") if homerooms else ""),
+        else ("שעת סיום · " + ("הכיתות שלי" if len(homerooms) > 1 else "הכיתה שלי") if homerooms else ""),
         "summary_sent": summary_sent, "latest": latest, "changelog": changelog,
         "history": [history[k] for k in sorted(history)],
     })
