@@ -189,7 +189,14 @@ def main():
     morning = args.morning or 5 <= now.hour < 8
     people = [p for p in (build_person(s, raw, extras, now, args.offline, morning) for s in staff) if p]
     if people:
-        write_json(DOCS / "data" / "staff.json", {"updated": now.isoformat(timespec="minutes"), "people": people})
+        by_name = {p["name"]: p["id"] for p in people}
+        teams = []
+        for team_name, t in json.loads((ROOT / "staff.json").read_text(encoding="utf-8")).get("teams", {}).items():
+            members = [{"id": by_name[m], "name": m} for m in t["members"] if m in by_name]
+            if t.get("lead") in by_name:
+                teams.append({"name": team_name, "lead": by_name[t["lead"]], "members": members})
+        write_json(DOCS / "data" / "staff.json",
+                   {"updated": now.isoformat(timespec="minutes"), "people": people, "teams": teams})
     DOCS.mkdir(exist_ok=True)
     (DOCS / "index.html").write_text((ROOT / "web" / "index.html").read_text(encoding="utf-8"), encoding="utf-8")
     (DOCS / ".nojekyll").write_text("")
