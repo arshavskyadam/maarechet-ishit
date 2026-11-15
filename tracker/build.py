@@ -40,6 +40,10 @@ def person_id(person):
     return hashlib.sha1((person.get("name") or person["as_given"]).encode("utf-8")).hexdigest()[:10]
 
 
+def pin_hash(pid, pin):
+    return hashlib.sha256(f"{pid}:{pin}".encode()).hexdigest()
+
+
 def ntfy_topic(person):
     """Per-person topic derived from a secret, so it can't be guessed from the public repository."""
     salt = os.environ.get("NTFY_SALT", "")
@@ -59,26 +63,78 @@ def sheet_csv_url(sheet_id, tab):
             + urllib.parse.quote(tab))
 
 
+def read_sheet_tab(tab, must_have):
+    """Rows of one tab of the management sheet as dicts keyed by the header row, or None if unreachable.
+
+    Tries the main sheet, then the older one. A tab is accepted only if its header has `must_have`:
+    Google returns the first tab when a tab name doesn't exist, which must not be read as data.
+    """
+    for sheet in [CONFIG.get("sheet_id"), CONFIG.get("fallback_sheet_id")]:
+        if not sheet:
+            continue
+        try:
+            req = urllib.request.Request(sheet_csv_url(sheet, tab), headers={"User-Agent": "Mozilla/5.0 (lesson-tracker)"})
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                table = list(csv.reader(io.StringIO(resp.read().decode("utf-8-sig"))))
+        except Exception as e:  # a broken sheet must not stop the timetable update
+            print(f"sheet {sheet[:8]}… tab '{tab}' not loaded: {e}")
+            continue
+        header = [h.strip() for h in table[0]] if table else []
+        if must_have not in header:
+            print(f"sheet {sheet[:8]}… has no tab '{tab}'")
+            continue
+        return [{h: (row[i].strip() if i < len(row) else "") for i, h in enumerate(header) if h} for row in table[1:]]
+    return None
+
+
+def site_teachers(raw):
+    names = set()
+    for _, cell in [e for entries in raw["slots"].values() for e in entries] + raw["regular"]:
+        for l in cell["lessons"]:
+            names.update(t.strip() for t in l["teacher"].split(",") if t.strip())
+    return names
+
+
+def load_staff(raw):
+    """People and teams from the sheet's staff tab, falling back to staff.json."""
+    local = json.loads((ROOT / "staff.json").read_text(encoding="utf-8"))
+    rows = read_sheet_tab(CONFIG.get("staff_tab", "אנשי צוות"), "שם (כמו בשחף: משפחה ואז פרטי)")
+    if not rows:
+        return local["staff"], local.get("teams", {})
+    known = site_teachers(raw) if raw else set()
+    by_tokens = {frozenset(t.split()): t for t in known}
+    staff, teams = [], {}
+    for r in rows:
+        typed = " ".join(r.get("שם (כמו בשחף: משפחה ואז פרטי)", "").split())
+        if not typed or r.get("פעיל", "כן") == "לא":
+            continue
+        # Exact name as on the site, or the same words in another order (e.g. first name first).
+        name = typed if typed in known else by_tokens.get(frozenset(typed.split()))
+        if raw and not name:
+            print(f"note: '{typed}' has no lessons on the school site")
+        homerooms = [h for h in [r.get("כיתת חינוך", ""), r.get("כיתת חינוך נוספת", "")] if h]
+        person = {"name": name, "as_given": typed, "display": name or typed,
+                  "roles": [x.strip() for x in r.get("תפקיד", "").split(",") if x.strip()]}
+        if homerooms:
+            person["homeroom"], person["homeroom_extra"] = homerooms[0], homerooms[1:]
+        staff.append(person)
+        team = r.get("צוות", "")
+        if team:
+            t = teams.setdefault(team, {"lead": None, "members": []})
+            t["members"].append(person["display"])
+            if r.get("ראש צוות") == "כן":
+                t["lead"] = person["display"]
+    print(f"staff from sheet: {len(staff)} people, {len(teams)} teams")
+    return staff, teams
+
+
 def load_extras():
     """Extra lessons the school site doesn't list (tutoring, mentoring...), from the Google Sheet and/or extras.json."""
     rows = list(load_json(ROOT / "extras.json", []))
-    sheet = CONFIG.get("extras_sheet_id")
-    if sheet:
-        try:
-            req = urllib.request.Request(sheet_csv_url(sheet, CONFIG.get("extras_sheet_tab", "תוספות")),
-                                         headers={"User-Agent": "Mozilla/5.0 (lesson-tracker)"})
-            with urllib.request.urlopen(req, timeout=30) as resp:
-                text = resp.read().decode("utf-8-sig")
-            table = list(csv.reader(io.StringIO(text)))
-            header = [h.strip() for h in table[0]] if table else []
-            col = {k: header.index(v) for k, v in HEADERS.items() if v in header}
-            for row in table[1:]:
-                get = lambda k: row[col[k]].strip() if k in col and col[k] < len(row) else ""  # noqa: E731
-                if get("name"):
-                    rows.append({k: get(k) for k in HEADERS})
-            print(f"extras sheet: {len(table) - 1} rows")
-        except Exception as e:  # a broken sheet must not stop the timetable update
-            print(f"extras sheet not loaded: {e}")
+    for r in read_sheet_tab(CONFIG.get("extras_sheet_tab", "תוספות"), HEADERS["name"]) or []:
+        row = {k: r.get(v, "") for k, v in HEADERS.items()}
+        if row["name"]:
+            rows.append(row)
     by_name = {}
     for r in rows:
         nums = [int(n) for n in re.findall(r"\d+", f"{r.get('from', '')} {r.get('to', '')} {r.get('hours', '')}")]
@@ -109,7 +165,7 @@ def build_person(person, raw, extras, now, offline, morning):
     history = {d["date"]: d for d in saved.get("history", [])}
     today = now.date().isoformat()
     name = person.get("name")
-    display = name or " ".join(reversed(person["as_given"].split(" ", 1)))
+    display = person.get("display") or name or " ".join(reversed(person["as_given"].split(" ", 1)))
     homerooms = [h for h in [person.get("homeroom")] + person.get("homeroom_extra", []) if h]
 
     if offline:
@@ -169,7 +225,11 @@ def build_person(person, raw, extras, now, offline, morning):
     active = sum(1 for l in latest["lessons"] if l.get("status") != "cancelled")
     print(f"{display}: {active} lessons, {len(found)} changes ({len(today_found)} today)"
           + (f", notification {sent}" if sent else ""))
-    return {"id": pid, "name": display, "roles": person.get("roles", []), "homerooms": homerooms}
+    entry = {"id": pid, "name": display, "roles": person.get("roles", []), "homerooms": homerooms}
+    pin = CONFIG.get("pin_hashes", {}).get(display)
+    if pin:
+        entry["pin"] = pin  # sha256("<id>:<code>"); the page asks for the code before showing the person
+    return entry
 
 
 def main():
@@ -185,13 +245,13 @@ def main():
         if not raw["classes"] or not raw["days"]:
             sys.exit("scan returned no classes or days; keeping the previous data")
         extras = load_extras()
-    staff = json.loads((ROOT / "staff.json").read_text(encoding="utf-8"))["staff"]
+    staff, team_defs = load_staff(raw)
     morning = args.morning or 5 <= now.hour < 8
     people = [p for p in (build_person(s, raw, extras, now, args.offline, morning) for s in staff) if p]
     if people:
         by_name = {p["name"]: p["id"] for p in people}
         teams = []
-        for team_name, t in json.loads((ROOT / "staff.json").read_text(encoding="utf-8")).get("teams", {}).items():
+        for team_name, t in team_defs.items():
             members = [{"id": by_name[m], "name": m} for m in t["members"] if m in by_name]
             if t.get("lead") in by_name:
                 teams.append({"name": team_name, "lead": by_name[t["lead"]], "members": members})

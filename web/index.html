@@ -187,6 +187,20 @@ body { margin: 0; }
   <input id="psearch" type="search" autocomplete="off" placeholder="למשל: רינה">
   <div class="plist" id="plist"></div>
 </div>
+<div class="wrap picker" id="pin" dir="rtl" lang="he" hidden>
+  <header>
+    <span class="eyebrow">מערכת שעות אישית · טכני חיפה</span>
+    <h1 id="pin-who"></h1>
+    <p class="muted" style="margin:0">הדף הזה נעול בקוד. הקוד נשמר במכשיר אחרי הכניסה הראשונה.</p>
+  </header>
+  <form id="pin-form" style="display:grid;gap:10px">
+    <label for="pin-code" class="muted" style="font-size:.85rem">קוד</label>
+    <input id="pin-code" type="password" inputmode="numeric" autocomplete="off" style="font:inherit;padding:10px 12px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);letter-spacing:.3em;text-align:center">
+    <button type="submit" style="font:inherit;padding:10px;border-radius:8px;border:0;background:var(--accent);color:var(--accent-ink);font-weight:600;cursor:pointer">כניסה</button>
+    <p id="pin-err" class="muted" style="margin:0;color:var(--bad)" hidden>הקוד לא נכון. נסו שוב.</p>
+    <button type="button" class="switch" id="pin-back">בחירת מדריך אחר</button>
+  </form>
+</div>
 <div class="wrap" id="app" dir="rtl" lang="he" hidden>
   <header>
     <span class="eyebrow">מערכת שעות אישית · טכני חיפה</span>
@@ -639,21 +653,50 @@ function startApp(DATA, TEAM) {
   }
 
   document.getElementById("switch").addEventListener("click", function () { set("me", null); location.reload(); });
+  document.getElementById("pin-back").addEventListener("click", function () { set("me", null); location.reload(); });
   var me = get("me");
   if (!me) { showPicker(); return; }
-  json("data/" + encodeURIComponent(me) + ".json").then(function (d) {
-    document.documentElement.dir = "rtl"; document.documentElement.lang = "he";
-    document.title = "המערכת של " + d.teacher.split(" ").slice(-1)[0];
-    app.hidden = false;
-    // Team leads also get the "time for the team" tab, built from the members' own pages.
-    json("data/staff.json").then(function (st) {
-      var team = (st.teams || []).filter(function (t) { return t.lead === me; })[0];
-      if (!team) return null;
-      return Promise.all(team.members.map(function (m) {
-        return json("data/" + encodeURIComponent(m.id) + ".json").then(function (x) { return { name: m.name, data: x }; },
-          function () { return { name: m.name, data: null }; });
-      })).then(function (members) { return { name: team.name, members: members }; });
-    }).catch(function () { return null; }).then(function (team) { startApp(d, team); });
+
+  function sha256(text) {
+    return crypto.subtle.digest("SHA-256", new TextEncoder().encode(text)).then(function (buf) {
+      return Array.prototype.map.call(new Uint8Array(buf), function (b) { return ("0" + b.toString(16)).slice(-2); }).join("");
+    });
+  }
+  // A simple lock for people who asked for one: the page asks for the code once per device.
+  function unlock(person) {
+    if (!person || !person.pin || get("pin-" + me) === person.pin) return Promise.resolve();
+    return new Promise(function (resolve) {
+      var box = document.getElementById("pin");
+      document.getElementById("pin-who").textContent = person.name;
+      box.hidden = false;
+      document.getElementById("pin-code").focus();
+      document.getElementById("pin-form").addEventListener("submit", function (e) {
+        e.preventDefault();
+        sha256(me + ":" + document.getElementById("pin-code").value.trim()).then(function (h) {
+          if (h === person.pin) { set("pin-" + me, h); box.hidden = true; resolve(); }
+          else { document.getElementById("pin-err").hidden = false; document.getElementById("pin-code").value = ""; }
+        });
+      });
+    });
+  }
+
+  json("data/staff.json").then(function (st) {
+    var person = st.people.filter(function (p) { return p.id === me; })[0];
+    if (!person) { set("me", null); showPicker(); return; }
+    return unlock(person).then(function () {
+      return json("data/" + encodeURIComponent(me) + ".json").then(function (d) {
+        document.documentElement.dir = "rtl"; document.documentElement.lang = "he";
+        document.title = "המערכת של " + d.teacher.split(" ").slice(-1)[0];
+        app.hidden = false;
+        // Team leads also get the "time for the team" tab, built from the members' own pages.
+        var team = (st.teams || []).filter(function (t) { return t.lead === me; })[0];
+        var load = !team ? Promise.resolve(null) : Promise.all(team.members.map(function (m) {
+          return json("data/" + encodeURIComponent(m.id) + ".json").then(function (x) { return { name: m.name, data: x }; },
+            function () { return { name: m.name, data: null }; });
+        })).then(function (members) { return { name: team.name, members: members }; });
+        return load.catch(function () { return null; }).then(function (t) { startApp(d, t); });
+      });
+    });
   }).catch(function () { set("me", null); showPicker(); });
 })();
 </script>

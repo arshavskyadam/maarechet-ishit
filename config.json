@@ -1,6 +1,11 @@
 {
  "site": "https://techni.shahaf.site/",
  "site_url": "",
- "extras_sheet_id": "1DNNu8bpesVCmtOHRBTPOe1NGYYNGYYed8CXC_HG9iDQ",
- "extras_sheet_tab": "תוספות"
+ "extras_sheet_tab": "תוספות",
+ "sheet_id": "1LdG-4i0ZIdnjinKY8wEI6eYCgNMktJkRQWbDZkRvrIE",
+ "staff_tab": "אנשי צוות",
+ "pin_hashes": {
+  "ארשבסקי אדם": "e1da384ff8192d2eedb7e8239754de4ee4b0449c8fbfe571ab3417b8ffd890ec"
+ },
+ "fallback_sheet_id": "1DNNu8bpesVCmtOHRBTPOe1NGYYNGYYed8CXC_HG9iDQ"
 }
