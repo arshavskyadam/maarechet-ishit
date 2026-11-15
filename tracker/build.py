@@ -17,6 +17,7 @@ import json
 import os
 import re
 import sys
+import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -31,7 +32,8 @@ DOCS = ROOT / "docs"
 CONFIG = json.loads((ROOT / "config.json").read_text(encoding="utf-8"))
 MAX_CHANGELOG = 150
 HISTORY_DAYS = 90
-WEEKDAYS = {"א": 0, "ב": 1, "ג": 2, "ד": 3, "ה": 4, "ו": 5}
+WEEKDAYS = {"ראשון": 0, "שני": 1, "שלישי": 2, "רביעי": 3, "חמישי": 4, "שישי": 5,
+            "א": 0, "ב": 1, "ג": 2, "ד": 3, "ה": 4, "ו": 5}
 
 
 def person_id(person):
@@ -47,35 +49,51 @@ def ntfy_topic(person):
     return "techni-" + digest.hexdigest()[:20]
 
 
+HEADERS = {"name": "שם המדריך", "type": "סוג", "day": "יום קבוע", "date": "או תאריך חד-פעמי",
+           "from": "משעה", "to": "עד שעה", "subject": "נושא / תלמיד", "class": "כיתה", "room": "חדר",
+           "notes": "הערות"}
+
+
+def sheet_csv_url(sheet_id, tab):
+    return (f"https://docs.google.com/spreadsheets/d/{sheet_id}/gviz/tq?tqx=out:csv&sheet="
+            + urllib.parse.quote(tab))
+
+
 def load_extras():
-    """Extra lessons the school site doesn't list, from a Google Sheet (CSV) and/or extras.json."""
+    """Extra lessons the school site doesn't list (tutoring, mentoring...), from the Google Sheet and/or extras.json."""
     rows = list(load_json(ROOT / "extras.json", []))
-    url = CONFIG.get("extras_csv_url")
-    if url:
+    sheet = CONFIG.get("extras_sheet_id")
+    if sheet:
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (lesson-tracker)"})
+            req = urllib.request.Request(sheet_csv_url(sheet, CONFIG.get("extras_sheet_tab", "תוספות")),
+                                         headers={"User-Agent": "Mozilla/5.0 (lesson-tracker)"})
             with urllib.request.urlopen(req, timeout=30) as resp:
                 text = resp.read().decode("utf-8-sig")
-            for i, row in enumerate(csv.reader(io.StringIO(text))):
-                if i == 0 or len(row) < 4 or not row[0].strip():
-                    continue
-                row = [c.strip() for c in row] + [""] * 7
-                rows.append({"name": row[0], "day": row[1], "hours": row[2], "subject": row[3],
-                             "class": row[4], "room": row[5], "date": row[6]})
+            table = list(csv.reader(io.StringIO(text)))
+            header = [h.strip() for h in table[0]] if table else []
+            col = {k: header.index(v) for k, v in HEADERS.items() if v in header}
+            for row in table[1:]:
+                get = lambda k: row[col[k]].strip() if k in col and col[k] < len(row) else ""  # noqa: E731
+                if get("name"):
+                    rows.append({k: get(k) for k in HEADERS})
+            print(f"extras sheet: {len(table) - 1} rows")
         except Exception as e:  # a broken sheet must not stop the timetable update
             print(f"extras sheet not loaded: {e}")
     by_name = {}
     for r in rows:
-        nums = [int(n) for n in re.findall(r"\d+", str(r.get("hours", "")))]
-        if not nums or not r.get("subject"):
+        nums = [int(n) for n in re.findall(r"\d+", f"{r.get('from', '')} {r.get('to', '')} {r.get('hours', '')}")]
+        kind, subject = r.get("type", ""), r.get("subject", "")
+        what = subject if kind and subject.startswith(kind) else " · ".join(x for x in [kind, subject] if x)
+        if not nums or not what or "דוגמה" in (r.get("notes") or ""):  # example rows stay in the sheet only
             continue
-        extra = {"hours": list(range(nums[0], nums[-1] + 1)), "subject": r["subject"],
+        extra = {"hours": list(range(min(nums), max(nums) + 1)), "subject": what,
                  "classes": [r["class"]] if r.get("class") else [], "rooms": [r["room"]] if r.get("room") else []}
-        m = re.match(r"(\d{1,2})[./](\d{1,2})[./](\d{4})", r.get("date", "") or "")
+        m = re.match(r"(\d{1,2})[./](\d{1,2})[./](\d{2,4})", r.get("date", "") or "")
         if m:
-            extra["date"] = f"{m.group(3)}-{int(m.group(2)):02d}-{int(m.group(1)):02d}"
-        elif (r.get("day") or "")[:1] in WEEKDAYS:
-            extra["weekday"] = WEEKDAYS[r["day"][:1]]
+            year = int(m.group(3)) + (2000 if len(m.group(3)) == 2 else 0)
+            extra["date"] = f"{year}-{int(m.group(2)):02d}-{int(m.group(1)):02d}"
+        elif (r.get("day") or "").replace("יום", "").strip(" '\"") in WEEKDAYS:
+            extra["weekday"] = WEEKDAYS[r["day"].replace("יום", "").strip(" '\"")]
         else:
             continue
         by_name.setdefault(" ".join(r["name"].split()), []).append(extra)
@@ -99,7 +117,7 @@ def build_person(person, raw, extras, now, offline, morning):
             return None
         latest, found = previous, []
     else:
-        mine = extras.get(name or "", []) + extras.get(person["as_given"], [])
+        mine = extras.get(display, []) + (extras.get(person["as_given"], []) if person["as_given"] != display else [])
         latest = scrape(name or "\u0000", raw=raw, extra_lessons=mine, homeroom=homerooms[0] if homerooms else None)
         latest["homerooms"] = [homeroom_info(raw, h) for h in homerooms]
         # The page's "end of day" table shows the homeroom classes.
