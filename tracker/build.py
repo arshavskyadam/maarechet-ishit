@@ -132,13 +132,15 @@ def build_person(person, raw, extras, now, offline, morning):
         for hr in latest.get("homerooms", [])[1:]:
             if text:
                 text += "\n" + "\n".join(homeroom_line(hr, today))
-        title, summary_sent = "☀️ היום שלך", today
+        title = "☀️ היום שלך"
     elif today_found:
         title, text = "⚠️ שינוי במערכת להיום", "\n".join(f"• {f['kind']}: {fill(f['text'])}" for f in today_found[:12])
     topic = ntfy_topic(person)
     sent = ""
     if text and topic:
         sent = "sent" if notify_ntfy(topic, title, text, CONFIG.get("site_url", "")) else "FAILED"
+        if sent == "sent" and title.startswith("☀️"):
+            summary_sent = today  # only once a day, and only once it really went out
 
     write_json(path, {
         "teacher": display, "source": CONFIG["site"], "roles": person.get("roles", []),
@@ -166,7 +168,7 @@ def main():
             sys.exit("scan returned no classes or days; keeping the previous data")
         extras = load_extras()
     staff = json.loads((ROOT / "staff.json").read_text(encoding="utf-8"))["staff"]
-    morning = args.morning or now.hour < 8
+    morning = args.morning or 5 <= now.hour < 8
     people = [p for p in (build_person(s, raw, extras, now, args.offline, morning) for s in staff) if p]
     if people:
         write_json(DOCS / "data" / "staff.json", {"updated": now.isoformat(timespec="minutes"), "people": people})
