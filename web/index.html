@@ -639,7 +639,7 @@ function startApp(DATA, TEAM) {
       function draw(q) {
         var shown = people.filter(function (p) { return !q || p.name.indexOf(q) >= 0 || q.split(" ").every(function (w) { return p.name.indexOf(w) >= 0; }); });
         list.innerHTML = shown.map(function (p) {
-          var tags = p.roles.concat(p.homerooms.map(function (h) { return "מחנך/ת " + h; })).join(" · ");
+          var tags = p.roles.concat(p.homerooms.map(function (h) { return "מדריך/ה " + h; })).join(" · ");
           return '<button type="button" data-id="' + esc(p.id) + '"><b>' + esc(p.name) + '</b><span>' + esc(tags) + '</span></button>';
         }).join("") || '<p class="muted">לא נמצא שם כזה ברשימה.</p>';
       }

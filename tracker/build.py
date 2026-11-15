@@ -87,6 +87,11 @@ def read_sheet_tab(tab, must_have):
     return None
 
 
+def role_label(role):
+    """The staff call coordinators "ראש צוות", whatever the sheet says."""
+    return re.sub(r"^רכז(ת)?\s+", "ראש צוות ", role.strip())
+
+
 def grade_of(class_name):
     """"יא'- 2" -> "יא", "י - 6" -> "י"."""
     return re.sub(r"[^א-ת]", "", class_name.split("-")[0])
@@ -119,7 +124,7 @@ def load_staff(raw):
             print(f"note: '{typed}' has no lessons on the school site")
         homerooms = [h for h in [r.get("כיתת חינוך", ""), r.get("כיתת חינוך נוספת", "")] if h]
         person = {"name": name, "as_given": typed, "display": name or typed,
-                  "roles": [x.strip() for x in r.get("תפקיד", "").split(",") if x.strip()]}
+                  "roles": [role_label(x) for x in r.get("תפקיד", "").split(",") if x.strip()]}
         if homerooms:
             person["homeroom"], person["homeroom_extra"] = homerooms[0], homerooms[1:]
         staff.append(person)
