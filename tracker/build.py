@@ -166,7 +166,8 @@ def load_extras():
             extra["weekday"] = WEEKDAYS[r["day"].replace("יום", "").strip(" '\"")]
         else:
             continue
-        by_name.setdefault(" ".join(r["name"].split()), []).append(extra)
+        # Keyed by the set of name words, so "מאי כהן" and "כהן מאי" are the same person.
+        by_name.setdefault(frozenset(r["name"].split()), []).append(extra)
     return by_name
 
 
@@ -187,7 +188,8 @@ def build_person(person, raw, extras, now, offline, morning):
             return None
         latest, found = previous, []
     else:
-        mine = extras.get(display, []) + (extras.get(person["as_given"], []) if person["as_given"] != display else [])
+        keys = {frozenset(display.split()), frozenset(person["as_given"].split())}
+        mine = [e for k in keys for e in extras.get(k, [])]
         latest = scrape(name or "\u0000", raw=raw, extra_lessons=mine, homeroom=homerooms[0] if homerooms else None)
         latest["homerooms"] = [homeroom_info(raw, h) for h in homerooms]
         # The page's "end of day" table: the homeroom classes, or for a team lead every class of their grades.
