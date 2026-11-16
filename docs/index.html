@@ -828,7 +828,7 @@ function startApp(DATA, TEAM) {
       var diff = e.regular && e.regular.hour !== e.now.hour;
       end = '<div class="cend">הכיתה מסיימת ב-' + esc(e.now.end) + ' <span class="muted">(שעה ' + e.now.hour + ')' + (diff ? ' · בדרך כלל ' + esc(e.regular.end) : "") + '</span></div>';
     }
-    return hol + '<div class="crows">' + rows + '</div>' + end + '<p class="muted" style="margin:0;font-size:.8rem">לחיצה על שעה מציגה מורים, חדרים ושינויים.</p>';
+    return hol + '<div class="crows">' + rows + '</div>' + end + '<p class="muted" style="margin:0;font-size:.8rem">לחיצה על שעה מציגה את כל המורים והשינויים.</p>';
   }
   function clsWeek(f, days) {
     var sl = f.slots.filter(function (x) { return days.some(function (d) { return d.date === x.date; }); });
