@@ -184,6 +184,7 @@ body { margin: 0; }
 .pbtn b { font-weight: 600; font-size: .92rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pbtn small { font-size: .74rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pbtn:hover, .lead:hover { border-color: var(--accent); }
+.sub { font-size: .78rem; font-weight: 700; color: var(--muted); padding: 4px 2px 0; }
 .switch { background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; font-size: .85rem; text-decoration: underline; }
 </style>
 </head>
@@ -651,6 +652,11 @@ function startApp(DATA, TEAM) {
         return '<button type="button" class="pbtn" data-id="' + esc(p.id) + '"><b>' + esc(p.name) + '</b><small>' + esc(cls(p)) + '</small></button>';
       }
       function sortKey(p) { return (p.homerooms[0] || "תתת") + p.name; }
+      function isMentor(p) { return p.roles.some(function (r) { return r.indexOf("חונכות") >= 0; }); }
+      function mentorBtn(p) {
+        var head = p.roles.some(function (r) { return r.indexOf("ראש צוות חונכות") >= 0; });
+        return '<button type="button" class="pbtn" data-id="' + esc(p.id) + '"><b>' + esc(p.name) + '</b><small>' + (head ? "ראש צוות חונכות" : "חונכות") + '</small></button>';
+      }
       // One card per team: the lead first, then the team's instructors by class.
       var placed = {};
       var cards = (d.teams || []).map(function (t) {
@@ -659,12 +665,15 @@ function startApp(DATA, TEAM) {
           .sort(function (a, b) { return sortKey(a).localeCompare(sortKey(b), "he"); });
         if (lead) placed[lead.id] = 1;
         rest.forEach(function (p) { placed[p.id] = 1; });
+        var mentors = rest.filter(isMentor), instructors = rest.filter(function (p) { return !isMentor(p); });
         return '<section class="team"><header><h2>' + esc(t.name) + '</h2><span>' + (rest.length + (lead ? 1 : 0)) + ' אנשים</span></header><div class="body">' +
           (lead ? '<button type="button" class="lead" data-id="' + esc(lead.id) + '"><span class="crown">👑</span><span><b>' + esc(lead.name) + '</b><small>ראש צוות' + (lead.homerooms.length ? ' · ' + esc(lead.homerooms.join(", ")) : "") + '</small></span></button>' : "") +
-          '<div class="grid2">' + rest.map(btn).join("") + '</div></div></section>';
+          '<div class="grid2">' + instructors.map(btn).join("") + '</div>' +
+          (mentors.length ? '<div class="sub">🤝 חונכות</div><div class="grid2">' + mentors.map(mentorBtn).join("") + '</div>' : "") +
+          '</div></section>';
       });
       var others = d.people.filter(function (p) { return !placed[p.id]; }).sort(function (a, b) { return a.name.localeCompare(b.name, "he"); });
-      if (others.length) cards.push('<section class="team"><header><h2>חונכות ומגמות</h2><span>' + others.length + ' אנשים</span></header><div class="body"><div class="grid2">' + others.map(btn).join("") + '</div></div></section>');
+      if (others.length) cards.push('<section class="team"><header><h2>מגמות</h2><span>' + others.length + ' אנשים</span></header><div class="body"><div class="grid2">' + others.map(btn).join("") + '</div></div></section>');
       var grouped = cards.join("");
       var all = d.people.slice().sort(function (a, b) { return a.name.localeCompare(b.name, "he"); });
       function draw(q) {
