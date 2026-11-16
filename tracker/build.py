@@ -261,6 +261,47 @@ def build_person(person, raw, extras, now, offline, morning):
     return entry
 
 
+def class_id(class_name):
+    return hashlib.sha1(class_name.encode("utf-8")).hexdigest()[:8]
+
+
+def build_classes(raw, now):
+    """One small file per class (its lessons, changes and end times) plus an index, for the "classes" tab."""
+    days = sorted(raw["days"].values(), key=lambda d: d["date"])
+    regular = {}
+    for name, cell in raw["regular"]:
+        regular[(name, cell["date"], cell["hour"])] = cell
+    index = []
+    for c in raw["classes"]:
+        name = c["name"]
+        slots = {}
+        for (date, hour), entries in raw["slots"].items():
+            for n, cell in entries:
+                if n == name and hour is not None:
+                    slots[(date, hour)] = {"date": date, "hour": hour, "start": cell["start"], "end": cell["end"],
+                                           "lessons": cell["lessons"], "changes": cell["changes"], "removed": []}
+        for (n, date, hour), cell in regular.items():
+            if n != name or hour is None:
+                continue
+            cur = slots.get((date, hour))
+            kept = {(l["subject"], l["teacher"]) for l in (cur["lessons"] if cur else [])}
+            gone = [l for l in cell["lessons"] if (l["subject"], l["teacher"]) not in kept]
+            if gone:
+                slot = slots.setdefault((date, hour), {"date": date, "hour": hour, "start": cell["start"], "end": cell["end"],
+                                                       "lessons": [], "changes": [], "removed": []})
+                slot["removed"].extend(gone)
+        info = homeroom_info(raw, name)["days"]
+        ends = {d: {"now": v.get("last_lesson"), "regular": v.get("regular_end")} for d, v in info.items()}
+        cid = class_id(name)
+        write_json(DOCS / "data" / "class" / f"{cid}.json", {
+            "class": name, "updated": now.isoformat(timespec="minutes"), "days": days, "ends": ends,
+            "slots": [slots[k] for k in sorted(slots)],
+        })
+        index.append({"id": cid, "name": name, "grade": grade_of(name)})
+    write_json(DOCS / "data" / "classes.json", {"updated": now.isoformat(timespec="minutes"), "classes": index})
+    print(f"built {len(index)} class pages")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--offline", action="store_true", help="rebuild the site from saved data without scanning")
@@ -280,6 +321,8 @@ def main():
             shown = person.get("display") or person.get("name") or " ".join(reversed(person["as_given"].split(" ", 1)))
             if shown == t.get("lead"):
                 person["lead_grades"] = person.get("lead_grades", []) + t.get("grades", [])
+    if raw:
+        build_classes(raw, now)
     morning = args.morning or 5 <= now.hour < 8
     people = [p for p in (build_person(s, raw, extras, now, args.offline, morning) for s in staff) if p]
     if people:
