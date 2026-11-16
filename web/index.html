@@ -14,6 +14,7 @@
   --bg: #f2f4f5; --surface: #ffffff; --ink: #15212b; --muted: #5a6773; --line: #d8dee3;
   --accent: #1d5fa8; --accent-soft: #e2ecf8; --accent-ink: #ffffff;
   --warn: #9a5800; --warn-soft: #fbefd8; --bad: #b3261e; --bad-soft: #f9e2e0;
+  --good: #23753f; --good-soft: #e1f3e6;
   --font-body: "IBM Plex Sans Hebrew", "Segoe UI", Arial, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
   --r: 10px;
@@ -21,11 +22,11 @@
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #0f151b; --surface: #17212a; --ink: #e5ebf0; --muted: #94a2ae; --line: #2a3641;
   --accent: #7db4f0; --accent-soft: #1a2d43; --accent-ink: #0f151b;
-  --warn: #f0b45c; --warn-soft: #3a2a12; --bad: #f28b82; --bad-soft: #3d1e1c; color-scheme: dark } }
+  --warn: #f0b45c; --warn-soft: #3a2a12; --bad: #f28b82; --bad-soft: #3d1e1c; --good: #7fd19b; --good-soft: #163222; color-scheme: dark } }
 :root[data-theme="dark"] {
   --bg: #0f151b; --surface: #17212a; --ink: #e5ebf0; --muted: #94a2ae; --line: #2a3641;
   --accent: #7db4f0; --accent-soft: #1a2d43; --accent-ink: #0f151b;
-  --warn: #f0b45c; --warn-soft: #3a2a12; --bad: #f28b82; --bad-soft: #3d1e1c; color-scheme: dark }
+  --warn: #f0b45c; --warn-soft: #3a2a12; --bad: #f28b82; --bad-soft: #3d1e1c; --good: #7fd19b; --good-soft: #163222; color-scheme: dark }
 
 * { box-sizing: border-box }
 body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5; }
@@ -131,6 +132,22 @@ table.week td.slot.cancelled .s { text-decoration: line-through; }
 details { font-size: .86rem; }
 summary { cursor: pointer; color: var(--muted); }
 details ul { margin: 6px 0 0; padding-inline-start: 18px; }
+.lesson.note { border-color: var(--good); }
+.lesson.note .when { background: var(--good-soft); }
+.lesson.note .when .per { color: var(--good); }
+.note-tag { display: inline-block; padding: 1px 8px; border-radius: 999px; background: var(--good-soft); color: var(--good); font-weight: 600; font-size: .78rem; }
+.note-del { font: inherit; font-size: .8rem; background: none; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; padding: 0; }
+.addnote { font: inherit; font-weight: 600; color: var(--good); background: var(--surface); border: 1px dashed var(--good); border-radius: var(--r); padding: 10px; cursor: pointer; width: 100%; }
+.noteform { background: var(--surface); border: 1px solid var(--good); border-radius: var(--r); padding: 12px 14px; display: grid; gap: 10px; }
+.noteform label { display: grid; gap: 4px; font-size: .85rem; color: var(--muted); }
+.noteform input[type=text], .noteform select { font: inherit; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); width: 100%; }
+.noteform .chk { display: flex; gap: 8px; align-items: center; color: var(--ink); }
+.noteform .btns { display: flex; gap: 8px; }
+.noteform .btns button { font: inherit; font-weight: 600; border-radius: 8px; padding: 7px 16px; cursor: pointer; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+.noteform .btns button.save { background: var(--good); border-color: var(--good); color: var(--surface); }
+.noteform .hint { font-size: .78rem; color: var(--muted); margin: 0; }
+table.week td.slot.note { background: var(--good-soft); }
+table.week .n { display: block; color: var(--good); font-weight: 600; }
 .empty { background: var(--surface); border: 1px dashed var(--line); border-radius: var(--r); padding: 22px; text-align: center; color: var(--muted); }
 
 .filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
@@ -282,6 +299,24 @@ function startApp(DATA, TEAM) {
   function stamp(ts) { return ts ? dm(ts.slice(0, 10)) + " " + ts.slice(11, 16) : ""; }
   function range(a, b) { return '<bdi dir="ltr">' + esc(a) + "–" + esc(b) + '</bdi>'; }
   function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
+  // ---- personal reminders: kept only in this browser, per person
+  var NH = [[0, "07:25", "08:10"], [1, "08:10", "08:55"], [2, "08:55", "09:40"], [3, "09:55", "10:40"], [4, "10:40", "11:25"],
+    [5, "11:30", "12:15"], [6, "12:15", "13:00"], [7, "13:40", "14:25"], [8, "14:25", "15:10"], [9, "15:15", "16:00"], [10, "16:00", "16:45"]];
+  var NOTE_KEY = "notes-" + (DATA.teacher || "");
+  function loadNotes() { try { return JSON.parse(store(NOTE_KEY) || "[]"); } catch (e) { return []; } }
+  var notes = loadNotes();
+  function saveNotes() { store(NOTE_KEY, JSON.stringify(notes)); }
+  function dow(iso) { return new Date(iso + "T12:00:00").getDay(); }
+  function notesOn(iso) {
+    return notes.filter(function (n) { return n.date ? n.date === iso : n.dow === dow(iso); })
+      .sort(function (a, b) { return a.hour - b.hour; });
+  }
+  function noteCard(n) {
+    var hh = NH[n.hour] || [n.hour, "", ""];
+    return '<article class="lesson note"><div class="when"><span class="per">שעה ' + n.hour + '</span><span class="t">' + esc(hh[1]) + '</span><span class="t2">עד ' + esc(hh[2]) + '</span></div>' +
+      '<div class="what"><h3>' + esc(n.text) + '</h3><div class="row"><span class="note-tag">תזכורת אישית</span><span class="muted">' + (n.date ? "פעם אחת" : "כל שבוע") + '</span>' +
+      '<button type="button" class="note-del" data-del="' + esc(n.id) + '">מחיקה</button></div></div></article>';
+  }
   var todayISO = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jerusalem" }).format(new Date());
   var hourNow = +new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Jerusalem", hour: "2-digit", hour12: false }).format(new Date());
   var BAD = /ביטול|חופשי|מבוטל/;
@@ -506,8 +541,35 @@ function startApp(DATA, TEAM) {
     // Items that land on a lesson are shown on its card; the rest give context for the day.
     var ctx = AG.filter(function (a) { return a.date === selected && !a.my_lessons.length; });
     document.getElementById("dayagenda").innerHTML = ctx.length ? '<div class="daydate">גם היום בכיתות שלך</div>' + ctx.map(function (a) { return agItem(a, false); }).join("") : "";
-    document.getElementById("daylist").innerHTML = list.length ? blocks(list).map(card).join("") : '<div class="empty">אין לך שיעורים ביום הזה.</div>';
+    var items = blocks(list).map(function (b) { return { h: b.firstHour, html: card(b) }; })
+      .concat(notesOn(selected).map(function (n) { return { h: n.hour + 0.5, html: noteCard(n) }; }))
+      .sort(function (a, b) { return a.h - b.h; });
+    document.getElementById("daylist").innerHTML = (items.length ? items.map(function (i) { return i.html; }).join("") : '<div class="empty">אין לך שיעורים ביום הזה.</div>') +
+      '<div id="noteslot"><button type="button" class="addnote" id="addnote">＋ תזכורת אישית ליום הזה</button></div>';
   }
+  function openNoteForm() {
+    var d = dayMap[selected];
+    document.getElementById("noteslot").innerHTML = '<form class="noteform" id="noteform">' +
+      '<label for="n-hour">שעה<select id="n-hour">' + NH.map(function (h) { return '<option value="' + h[0] + '">שעה ' + h[0] + ' · ' + h[1] + ' עד ' + h[2] + '</option>'; }).join("") + '</select></label>' +
+      '<label for="n-text">מה לזכור<input type="text" id="n-text" maxlength="80" placeholder="למשל: ללכת לאפסנאות" autocomplete="off"></label>' +
+      '<label class="chk" for="n-weekly"><input type="checkbox" id="n-weekly"> לחזור כל ' + esc(d.weekday) + '</label>' +
+      '<div class="btns"><button type="submit" class="save">שמירה</button><button type="button" id="n-cancel">ביטול</button></div>' +
+      '<p class="hint">התזכורות נשמרות רק בטלפון הזה, ורק אתם רואים אותן.</p></form>';
+    document.getElementById("n-text").focus();
+  }
+  document.getElementById("daylist").addEventListener("click", function (e) {
+    if (e.target.closest("#addnote")) { openNoteForm(); return; }
+    if (e.target.closest("#n-cancel")) { renderDay(); return; }
+    var del = e.target.closest("button[data-del]");
+    if (del) { var id = del.getAttribute("data-del"); notes = notes.filter(function (n) { return n.id !== id; }); saveNotes(); renderDay(); }
+  });
+  document.getElementById("daylist").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var text = document.getElementById("n-text").value.trim(); if (!text) { document.getElementById("n-text").focus(); return; }
+    var n = { id: String(Date.now()), hour: +document.getElementById("n-hour").value, text: text };
+    if (document.getElementById("n-weekly").checked) n.dow = dow(selected); else n.date = selected;
+    notes.push(n); saveNotes(); renderDay();
+  });
   document.getElementById("strip").addEventListener("click", function (e) {
     var b = e.target.closest("button[data-date]"); if (!b) return;
     selected = b.getAttribute("data-date"); renderStrip(); renderDay();
@@ -540,6 +602,7 @@ function startApp(DATA, TEAM) {
     var days = (weeks[weekIdx] || []).filter(function (d) { return lessonsOn(d.date).length || new Date(d.date).getDay() < 5; });
     var inWeek = lessons.filter(function (l) { return days.some(function (d) { return d.date === l.date; }); });
     var hours = {}; inWeek.forEach(function (l) { hours[l.hour] = l.start + "–" + l.end; });
+    days.forEach(function (d) { notesOn(d.date).forEach(function (n) { if (!hours[n.hour] && NH[n.hour]) hours[n.hour] = NH[n.hour][1] + "–" + NH[n.hour][2]; }); });
     var hs = Object.keys(hours).map(Number).sort(function (a, b) { return a - b; });
     var shown = active(inWeek.filter(match));
     var h = '<tr><th class="h">שעה</th>' + days.map(function (d) { return '<th>' + esc(d.weekday.replace("יום ", "")) + ' <span class="mono">' + dm(d.date) + '</span>' + d.holidays.map(function (x) { return '<span class="hol">' + esc(x) + '</span>'; }).join("") + '</th>'; }).join("") + '</tr>';
@@ -548,10 +611,13 @@ function startApp(DATA, TEAM) {
       days.forEach(function (d) {
         var all = inWeek.filter(function (l) { return l.date === d.date && l.hour === hr; });
         var here = all.filter(match);
+        var mine = notesOn(d.date).filter(function (n) { return n.hour === hr; });
+        var nh = mine.map(function (n) { return '<span class="n">● ' + esc(n.text) + '</span>'; }).join("");
+        if (!here.length && mine.length) { h += '<td class="slot note" data-date="' + d.date + '">' + nh + '</td>'; return; }
         if (!all.length) { h += '<td></td>'; return; }
         if (!here.length) { h += '<td class="dim">' + all.map(function (l) { return esc(l.classes.join(", ")); }).join("<br>") + '</td>'; return; }
         var allOff = here.every(function (l) { return l.status === "cancelled"; });
-        h += '<td class="slot' + (allOff ? " cancelled" : here.some(function (l) { return l.changes.length; }) ? " changed" : "") + '" data-date="' + d.date + '">' + here.map(function (l) { return '<span class="s">' + esc(l.subject) + '</span>' + esc(l.classes.join(", ")) + (l.status === "cancelled" ? ' <span class="off-tag">לא מתקיים</span>' : ""); }).join("<hr style='border:0;border-top:1px solid var(--line);margin:3px 0'>") + '</td>';
+        h += '<td class="slot' + (allOff ? " cancelled" : here.some(function (l) { return l.changes.length; }) ? " changed" : "") + '" data-date="' + d.date + '">' + here.map(function (l) { return '<span class="s">' + esc(l.subject) + '</span>' + esc(l.classes.join(", ")) + (l.status === "cancelled" ? ' <span class="off-tag">לא מתקיים</span>' : ""); }).join("<hr style='border:0;border-top:1px solid var(--line);margin:3px 0'>") + nh + '</td>';
       });
       h += '</tr>';
     });
