@@ -1,0 +1,1406 @@
+{
+ "class": "יד'- 1",
+ "updated": "2026-11-16T23:49+02:00",
+ "days": [
+  {
+   "date": "2026-11-15",
+   "weekday": "יום ראשון",
+   "holidays": []
+  },
+  {
+   "date": "2026-11-16",
+   "weekday": "יום שני",
+   "holidays": [
+    "יום הזיכרון לדוד בן גוריון"
+   ]
+  },
+  {
+   "date": "2026-11-17",
+   "weekday": "יום שלישי",
+   "holidays": []
+  },
+  {
+   "date": "2026-11-18",
+   "weekday": "יום רביעי",
+   "holidays": []
+  },
+  {
+   "date": "2026-11-19",
+   "weekday": "יום חמישי",
+   "holidays": []
+  },
+  {
+   "date": "2026-11-20",
+   "weekday": "יום שישי",
+   "holidays": []
+  },
+  {
+   "date": "2026-11-22",
+   "weekday": "יום ראשון",
+   "holidays": []
+  },
+  {
+   "date": "2026-11-23",
+   "weekday": "יום שני",
+   "holidays": []
+  },
+  {
+   "date": "2026-11-24",
+   "weekday": "יום שלישי",
+   "holidays": []
+  },
+  {
+   "date": "2026-11-25",
+   "weekday": "יום רביעי",
+   "holidays": []
+  },
+  {
+   "date": "2026-11-26",
+   "weekday": "יום חמישי",
+   "holidays": []
+  },
+  {
+   "date": "2026-11-27",
+   "weekday": "יום שישי",
+   "holidays": []
+  }
+ ],
+ "ends": {
+  "2026-11-15": {
+   "now": {
+    "hour": 6,
+    "end": "13:00"
+   },
+   "regular": {
+    "hour": 6,
+    "end": "13:00"
+   }
+  },
+  "2026-11-16": {
+   "now": {
+    "hour": 9,
+    "end": "16:00"
+   },
+   "regular": {
+    "hour": 9,
+    "end": "16:00"
+   }
+  },
+  "2026-11-17": {
+   "now": {
+    "hour": 8,
+    "end": "15:10"
+   },
+   "regular": {
+    "hour": 8,
+    "end": "15:10"
+   }
+  },
+  "2026-11-18": {
+   "now": {
+    "hour": 6,
+    "end": "13:00"
+   },
+   "regular": {
+    "hour": 6,
+    "end": "13:00"
+   }
+  },
+  "2026-11-19": {
+   "now": {
+    "hour": 7,
+    "end": "14:25"
+   },
+   "regular": {
+    "hour": 7,
+    "end": "14:25"
+   }
+  },
+  "2026-11-22": {
+   "now": {
+    "hour": 6,
+    "end": "13:00"
+   },
+   "regular": {
+    "hour": 6,
+    "end": "13:00"
+   }
+  },
+  "2026-11-23": {
+   "now": {
+    "hour": 9,
+    "end": "16:00"
+   },
+   "regular": {
+    "hour": 9,
+    "end": "16:00"
+   }
+  },
+  "2026-11-24": {
+   "now": {
+    "hour": 8,
+    "end": "15:10"
+   },
+   "regular": {
+    "hour": 8,
+    "end": "15:10"
+   }
+  },
+  "2026-11-25": {
+   "now": {
+    "hour": 6,
+    "end": "13:00"
+   },
+   "regular": {
+    "hour": 6,
+    "end": "13:00"
+   }
+  },
+  "2026-11-26": {
+   "now": {
+    "hour": 7,
+    "end": "14:25"
+   },
+   "regular": {
+    "hour": 7,
+    "end": "14:25"
+   }
+  }
+ },
+ "slots": [
+  {
+   "date": "2026-11-15",
+   "hour": 1,
+   "start": "08:10",
+   "end": "08:55",
+   "lessons": [
+    {
+     "subject": "מעבדה בסרטוט הנדסי ממוחשב",
+     "room": "",
+     "teacher": "דהן ירין"
+    },
+    {
+     "subject": "מעבדה בסרטוט הנדסי ממוחשב",
+     "room": "",
+     "teacher": "כץ עדי"
+    },
+    {
+     "subject": "מעבדה בסרטוט הנדסי ממוחשב",
+     "room": "",
+     "teacher": "ניימן אסתל"
+    },
+    {
+     "subject": "מעבדה בסרטוט הנדסי ממוחשב",
+     "room": "",
+     "teacher": "ארשבסקי אדם"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-15",
+   "hour": 2,
+   "start": "08:55",
+   "end": "09:40",
+   "lessons": [
+    {
+     "subject": "תכן מכני הנדסי",
+     "room": "",
+     "teacher": "גרינהולץ משה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-15",
+   "hour": 3,
+   "start": "09:55",
+   "end": "10:40",
+   "lessons": [
+    {
+     "subject": "תכן מכני הנדסי",
+     "room": "",
+     "teacher": "גרינהולץ משה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-15",
+   "hour": 4,
+   "start": "10:40",
+   "end": "11:25",
+   "lessons": [
+    {
+     "subject": "תכן מכני הנדסי",
+     "room": "",
+     "teacher": "גרינהולץ משה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-15",
+   "hour": 5,
+   "start": "11:30",
+   "end": "12:15",
+   "lessons": [
+    {
+     "subject": "תכן מכני הנדסי",
+     "room": "",
+     "teacher": "גרינהולץ משה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-15",
+   "hour": 6,
+   "start": "12:15",
+   "end": "13:00",
+   "lessons": [
+    {
+     "subject": "תכן מכני הנדסי",
+     "room": "",
+     "teacher": "גרינהולץ משה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-16",
+   "hour": 1,
+   "start": "08:10",
+   "end": "08:55",
+   "lessons": [
+    {
+     "subject": "תרמודינמיקה",
+     "room": "",
+     "teacher": "גולן אלי"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-16",
+   "hour": 2,
+   "start": "08:55",
+   "end": "09:40",
+   "lessons": [
+    {
+     "subject": "תרמודינמיקה",
+     "room": "",
+     "teacher": "גולן אלי"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-16",
+   "hour": 3,
+   "start": "09:55",
+   "end": "10:40",
+   "lessons": [
+    {
+     "subject": "אווירודינמיקה",
+     "room": "",
+     "teacher": "ויצמן ציון"
+    },
+    {
+     "subject": "אווירודינמיקה",
+     "room": "",
+     "teacher": "גרינהולץ משה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-16",
+   "hour": 4,
+   "start": "10:40",
+   "end": "11:25",
+   "lessons": [
+    {
+     "subject": "הנעה רקטית ולחלל",
+     "room": "",
+     "teacher": "גולן אלי"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-16",
+   "hour": 5,
+   "start": "11:30",
+   "end": "12:15",
+   "lessons": [
+    {
+     "subject": "אווירודינמיקה",
+     "room": "",
+     "teacher": "גרינהולץ משה"
+    },
+    {
+     "subject": "אווירודינמיקה",
+     "room": "",
+     "teacher": "ויצמן ציון"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-16",
+   "hour": 6,
+   "start": "12:15",
+   "end": "13:00",
+   "lessons": [
+    {
+     "subject": "אווירודינמיקה",
+     "room": "",
+     "teacher": "גרינהולץ משה"
+    },
+    {
+     "subject": "אווירודינמיקה",
+     "room": "",
+     "teacher": "ויצמן ציון"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-16",
+   "hour": 7,
+   "start": "13:40",
+   "end": "14:25",
+   "lessons": [
+    {
+     "subject": "מעבדה בחומרים ואוווירו'",
+     "room": "",
+     "teacher": "ויצמן ציון"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-16",
+   "hour": 8,
+   "start": "14:25",
+   "end": "15:10",
+   "lessons": [
+    {
+     "subject": "מעבדה בחומרים ואוווירו'",
+     "room": "",
+     "teacher": "ויצמן ציון"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-16",
+   "hour": 9,
+   "start": "15:15",
+   "end": "16:00",
+   "lessons": [
+    {
+     "subject": "מעבדה באוטומציה תעשייתית",
+     "room": "",
+     "teacher": "שפילר אדם"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-17",
+   "hour": 1,
+   "start": "08:10",
+   "end": "08:55",
+   "lessons": [
+    {
+     "subject": "מכניקה הנדסית",
+     "room": "",
+     "teacher": "זרניצקי לובה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-17",
+   "hour": 2,
+   "start": "08:55",
+   "end": "09:40",
+   "lessons": [
+    {
+     "subject": "מכניקה הנדסית",
+     "room": "",
+     "teacher": "זרניצקי לובה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-17",
+   "hour": 3,
+   "start": "09:55",
+   "end": "10:40",
+   "lessons": [
+    {
+     "subject": "תחזוקת כלי טיס",
+     "room": "",
+     "teacher": "זרניצקי לובה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-17",
+   "hour": 4,
+   "start": "10:40",
+   "end": "11:25",
+   "lessons": [
+    {
+     "subject": "תחזוקת כלי טיס",
+     "room": "",
+     "teacher": "זרניצקי לובה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-17",
+   "hour": 5,
+   "start": "11:30",
+   "end": "12:15",
+   "lessons": [
+    {
+     "subject": "פרויקט גמר מכונות",
+     "room": "",
+     "teacher": "גולן אלי"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-17",
+   "hour": 6,
+   "start": "12:15",
+   "end": "13:00",
+   "lessons": [
+    {
+     "subject": "מכניקה הנדסית",
+     "room": "",
+     "teacher": "זרניצקי לובה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-17",
+   "hour": 7,
+   "start": "13:40",
+   "end": "14:25",
+   "lessons": [
+    {
+     "subject": "חומרים תעופתיים",
+     "room": "",
+     "teacher": "זרניצקי לובה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-17",
+   "hour": 8,
+   "start": "14:25",
+   "end": "15:10",
+   "lessons": [
+    {
+     "subject": "מעבדה באוטומציה תעשייתית",
+     "room": "",
+     "teacher": "שפילר אדם"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-18",
+   "hour": 1,
+   "start": "08:10",
+   "end": "08:55",
+   "lessons": [
+    {
+     "subject": "אנגלית טכנית",
+     "room": "",
+     "teacher": "חדש דפנה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-18",
+   "hour": 2,
+   "start": "08:55",
+   "end": "09:40",
+   "lessons": [
+    {
+     "subject": "מעבדה בסרטוט הנדסי ממוחשב",
+     "room": "",
+     "teacher": "ארשבסקי אדם"
+    },
+    {
+     "subject": "מעבדה בסרטוט הנדסי ממוחשב",
+     "room": "",
+     "teacher": "כץ עדי"
+    },
+    {
+     "subject": "מעבדה בסרטוט הנדסי ממוחשב",
+     "room": "",
+     "teacher": "ניימן אסתל"
+    },
+    {
+     "subject": "מעבדה בסרטוט הנדסי ממוחשב",
+     "room": "",
+     "teacher": "דהן ירין"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-18",
+   "hour": 3,
+   "start": "09:55",
+   "end": "10:40",
+   "lessons": [
+    {
+     "subject": "מנועי סילון",
+     "room": "",
+     "teacher": "גולן אלי"
+    },
+    {
+     "subject": "מנועי סילון",
+     "room": "",
+     "teacher": "ויצמן ציון"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-18",
+   "hour": 4,
+   "start": "10:40",
+   "end": "11:25",
+   "lessons": [
+    {
+     "subject": "מנועי סילון",
+     "room": "",
+     "teacher": "גולן אלי"
+    },
+    {
+     "subject": "מנועי סילון",
+     "room": "",
+     "teacher": "ויצמן ציון"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-18",
+   "hour": 5,
+   "start": "11:30",
+   "end": "12:15",
+   "lessons": [
+    {
+     "subject": "אנגלית טכנית",
+     "room": "",
+     "teacher": "חדש דפנה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-18",
+   "hour": 6,
+   "start": "12:15",
+   "end": "13:00",
+   "lessons": [
+    {
+     "subject": "שעת מק\"ס",
+     "room": "",
+     "teacher": "פוגרבניאק גאורגי"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-19",
+   "hour": 1,
+   "start": "08:10",
+   "end": "08:55",
+   "lessons": [
+    {
+     "subject": "חומרים תעופתיים",
+     "room": "",
+     "teacher": "זרניצקי לובה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-19",
+   "hour": 2,
+   "start": "08:55",
+   "end": "09:40",
+   "lessons": [
+    {
+     "subject": "חומרים תעופתיים",
+     "room": "",
+     "teacher": "זרניצקי לובה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-19",
+   "hour": 3,
+   "start": "09:55",
+   "end": "10:40",
+   "lessons": [
+    {
+     "subject": "תרמודינמיקה",
+     "room": "",
+     "teacher": "גולן אלי"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-19",
+   "hour": 4,
+   "start": "10:40",
+   "end": "11:25",
+   "lessons": [
+    {
+     "subject": "פרויקט גמר מכונות",
+     "room": "",
+     "teacher": "מרגלית טניה"
+    },
+    {
+     "subject": "פרויקט גמר מכונות",
+     "room": "",
+     "teacher": "גולן אלי"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-19",
+   "hour": 5,
+   "start": "11:30",
+   "end": "12:15",
+   "lessons": [
+    {
+     "subject": "תיגבור",
+     "room": "",
+     "teacher": "ליפצקי אנסטסיה"
+    },
+    {
+     "subject": "תיגבור",
+     "room": "",
+     "teacher": ""
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-19",
+   "hour": 6,
+   "start": "12:15",
+   "end": "13:00",
+   "lessons": [
+    {
+     "subject": "מעבדה בהנעה רקטית וחלל",
+     "room": "",
+     "teacher": "גולן אלי"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-19",
+   "hour": 7,
+   "start": "13:40",
+   "end": "14:25",
+   "lessons": [
+    {
+     "subject": "פרויקט גמר מכונות",
+     "room": "",
+     "teacher": "מרגלית טניה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-22",
+   "hour": 1,
+   "start": "08:10",
+   "end": "08:55",
+   "lessons": [
+    {
+     "subject": "מעבדה בסרטוט הנדסי ממוחשב",
+     "room": "",
+     "teacher": "דהן ירין"
+    },
+    {
+     "subject": "מעבדה בסרטוט הנדסי ממוחשב",
+     "room": "",
+     "teacher": "כץ עדי"
+    },
+    {
+     "subject": "מעבדה בסרטוט הנדסי ממוחשב",
+     "room": "",
+     "teacher": "ניימן אסתל"
+    },
+    {
+     "subject": "מעבדה בסרטוט הנדסי ממוחשב",
+     "room": "",
+     "teacher": "ארשבסקי אדם"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-22",
+   "hour": 2,
+   "start": "08:55",
+   "end": "09:40",
+   "lessons": [
+    {
+     "subject": "תכן מכני הנדסי",
+     "room": "",
+     "teacher": "גרינהולץ משה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-22",
+   "hour": 3,
+   "start": "09:55",
+   "end": "10:40",
+   "lessons": [
+    {
+     "subject": "תכן מכני הנדסי",
+     "room": "",
+     "teacher": "גרינהולץ משה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-22",
+   "hour": 4,
+   "start": "10:40",
+   "end": "11:25",
+   "lessons": [
+    {
+     "subject": "תכן מכני הנדסי",
+     "room": "",
+     "teacher": "גרינהולץ משה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-22",
+   "hour": 5,
+   "start": "11:30",
+   "end": "12:15",
+   "lessons": [
+    {
+     "subject": "תכן מכני הנדסי",
+     "room": "",
+     "teacher": "גרינהולץ משה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-22",
+   "hour": 6,
+   "start": "12:15",
+   "end": "13:00",
+   "lessons": [
+    {
+     "subject": "תכן מכני הנדסי",
+     "room": "",
+     "teacher": "גרינהולץ משה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-23",
+   "hour": 1,
+   "start": "08:10",
+   "end": "08:55",
+   "lessons": [
+    {
+     "subject": "תרמודינמיקה",
+     "room": "",
+     "teacher": "גולן אלי"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-23",
+   "hour": 2,
+   "start": "08:55",
+   "end": "09:40",
+   "lessons": [
+    {
+     "subject": "תרמודינמיקה",
+     "room": "",
+     "teacher": "גולן אלי"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-23",
+   "hour": 3,
+   "start": "09:55",
+   "end": "10:40",
+   "lessons": [
+    {
+     "subject": "אווירודינמיקה",
+     "room": "",
+     "teacher": "ויצמן ציון"
+    },
+    {
+     "subject": "אווירודינמיקה",
+     "room": "",
+     "teacher": "גרינהולץ משה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-23",
+   "hour": 4,
+   "start": "10:40",
+   "end": "11:25",
+   "lessons": [
+    {
+     "subject": "הנעה רקטית ולחלל",
+     "room": "",
+     "teacher": "גולן אלי"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-23",
+   "hour": 5,
+   "start": "11:30",
+   "end": "12:15",
+   "lessons": [
+    {
+     "subject": "אווירודינמיקה",
+     "room": "",
+     "teacher": "ויצמן ציון"
+    }
+   ],
+   "changes": [
+    {
+     "type": "מבחן",
+     "text": "מבחן בוירודינמיקה יד1 · לקבוצה של גרינהולץ משה"
+    }
+   ],
+   "removed": [
+    {
+     "subject": "אווירודינמיקה",
+     "room": "",
+     "teacher": "גרינהולץ משה"
+    }
+   ]
+  },
+  {
+   "date": "2026-11-23",
+   "hour": 6,
+   "start": "12:15",
+   "end": "13:00",
+   "lessons": [
+    {
+     "subject": "אווירודינמיקה",
+     "room": "",
+     "teacher": "ויצמן ציון"
+    }
+   ],
+   "changes": [
+    {
+     "type": "מבחן",
+     "text": "מבחן בוירודינמיקה יד1 · לקבוצה של גרינהולץ משה"
+    }
+   ],
+   "removed": [
+    {
+     "subject": "אווירודינמיקה",
+     "room": "",
+     "teacher": "גרינהולץ משה"
+    }
+   ]
+  },
+  {
+   "date": "2026-11-23",
+   "hour": 7,
+   "start": "13:40",
+   "end": "14:25",
+   "lessons": [
+    {
+     "subject": "מעבדה בחומרים ואוווירו'",
+     "room": "",
+     "teacher": "ויצמן ציון"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-23",
+   "hour": 8,
+   "start": "14:25",
+   "end": "15:10",
+   "lessons": [
+    {
+     "subject": "מעבדה בחומרים ואוווירו'",
+     "room": "",
+     "teacher": "ויצמן ציון"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-23",
+   "hour": 9,
+   "start": "15:15",
+   "end": "16:00",
+   "lessons": [
+    {
+     "subject": "מעבדה באוטומציה תעשייתית",
+     "room": "",
+     "teacher": "שפילר אדם"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-24",
+   "hour": 1,
+   "start": "08:10",
+   "end": "08:55",
+   "lessons": [
+    {
+     "subject": "מכניקה הנדסית",
+     "room": "",
+     "teacher": "זרניצקי לובה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-24",
+   "hour": 2,
+   "start": "08:55",
+   "end": "09:40",
+   "lessons": [
+    {
+     "subject": "מכניקה הנדסית",
+     "room": "",
+     "teacher": "זרניצקי לובה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-24",
+   "hour": 3,
+   "start": "09:55",
+   "end": "10:40",
+   "lessons": [
+    {
+     "subject": "תחזוקת כלי טיס",
+     "room": "",
+     "teacher": "זרניצקי לובה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-24",
+   "hour": 4,
+   "start": "10:40",
+   "end": "11:25",
+   "lessons": [
+    {
+     "subject": "תחזוקת כלי טיס",
+     "room": "",
+     "teacher": "זרניצקי לובה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-24",
+   "hour": 5,
+   "start": "11:30",
+   "end": "12:15",
+   "lessons": [
+    {
+     "subject": "פרויקט גמר מכונות",
+     "room": "",
+     "teacher": "גולן אלי"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-24",
+   "hour": 6,
+   "start": "12:15",
+   "end": "13:00",
+   "lessons": [
+    {
+     "subject": "מכניקה הנדסית",
+     "room": "",
+     "teacher": "זרניצקי לובה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-24",
+   "hour": 7,
+   "start": "13:40",
+   "end": "14:25",
+   "lessons": [
+    {
+     "subject": "חומרים תעופתיים",
+     "room": "",
+     "teacher": "זרניצקי לובה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-24",
+   "hour": 8,
+   "start": "14:25",
+   "end": "15:10",
+   "lessons": [
+    {
+     "subject": "מעבדה באוטומציה תעשייתית",
+     "room": "",
+     "teacher": "שפילר אדם"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-25",
+   "hour": 1,
+   "start": "08:10",
+   "end": "08:55",
+   "lessons": [
+    {
+     "subject": "אנגלית טכנית",
+     "room": "",
+     "teacher": "חדש דפנה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-25",
+   "hour": 2,
+   "start": "08:55",
+   "end": "09:40",
+   "lessons": [
+    {
+     "subject": "מעבדה בסרטוט הנדסי ממוחשב",
+     "room": "",
+     "teacher": "ארשבסקי אדם"
+    },
+    {
+     "subject": "מעבדה בסרטוט הנדסי ממוחשב",
+     "room": "",
+     "teacher": "כץ עדי"
+    },
+    {
+     "subject": "מעבדה בסרטוט הנדסי ממוחשב",
+     "room": "",
+     "teacher": "ניימן אסתל"
+    },
+    {
+     "subject": "מעבדה בסרטוט הנדסי ממוחשב",
+     "room": "",
+     "teacher": "דהן ירין"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-25",
+   "hour": 3,
+   "start": "09:55",
+   "end": "10:40",
+   "lessons": [
+    {
+     "subject": "מנועי סילון",
+     "room": "",
+     "teacher": "ויצמן ציון"
+    }
+   ],
+   "changes": [
+    {
+     "type": "מבחן",
+     "text": "מבחן במנועי סילון יד1 · לקבוצה של גולן אלי"
+    }
+   ],
+   "removed": [
+    {
+     "subject": "מנועי סילון",
+     "room": "",
+     "teacher": "גולן אלי"
+    }
+   ]
+  },
+  {
+   "date": "2026-11-25",
+   "hour": 4,
+   "start": "10:40",
+   "end": "11:25",
+   "lessons": [
+    {
+     "subject": "מנועי סילון",
+     "room": "",
+     "teacher": "ויצמן ציון"
+    }
+   ],
+   "changes": [
+    {
+     "type": "מבחן",
+     "text": "מבחן במנועי סילון יד1 · לקבוצה של גולן אלי"
+    }
+   ],
+   "removed": [
+    {
+     "subject": "מנועי סילון",
+     "room": "",
+     "teacher": "גולן אלי"
+    }
+   ]
+  },
+  {
+   "date": "2026-11-25",
+   "hour": 5,
+   "start": "11:30",
+   "end": "12:15",
+   "lessons": [
+    {
+     "subject": "אנגלית טכנית",
+     "room": "",
+     "teacher": "חדש דפנה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-25",
+   "hour": 6,
+   "start": "12:15",
+   "end": "13:00",
+   "lessons": [
+    {
+     "subject": "שעת מק\"ס",
+     "room": "",
+     "teacher": "פוגרבניאק גאורגי"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-26",
+   "hour": 1,
+   "start": "08:10",
+   "end": "08:55",
+   "lessons": [
+    {
+     "subject": "חומרים תעופתיים",
+     "room": "",
+     "teacher": "זרניצקי לובה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-26",
+   "hour": 2,
+   "start": "08:55",
+   "end": "09:40",
+   "lessons": [
+    {
+     "subject": "חומרים תעופתיים",
+     "room": "",
+     "teacher": "זרניצקי לובה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-26",
+   "hour": 3,
+   "start": "09:55",
+   "end": "10:40",
+   "lessons": [
+    {
+     "subject": "תרמודינמיקה",
+     "room": "",
+     "teacher": "גולן אלי"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-26",
+   "hour": 4,
+   "start": "10:40",
+   "end": "11:25",
+   "lessons": [
+    {
+     "subject": "פרויקט גמר מכונות",
+     "room": "",
+     "teacher": "מרגלית טניה"
+    },
+    {
+     "subject": "פרויקט גמר מכונות",
+     "room": "",
+     "teacher": "גולן אלי"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-26",
+   "hour": 5,
+   "start": "11:30",
+   "end": "12:15",
+   "lessons": [
+    {
+     "subject": "תיגבור",
+     "room": "",
+     "teacher": "ליפצקי אנסטסיה"
+    },
+    {
+     "subject": "תיגבור",
+     "room": "",
+     "teacher": ""
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-26",
+   "hour": 6,
+   "start": "12:15",
+   "end": "13:00",
+   "lessons": [
+    {
+     "subject": "מעבדה בהנעה רקטית וחלל",
+     "room": "",
+     "teacher": "גולן אלי"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-26",
+   "hour": 7,
+   "start": "13:40",
+   "end": "14:25",
+   "lessons": [
+    {
+     "subject": "פרויקט גמר מכונות",
+     "room": "",
+     "teacher": "מרגלית טניה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  }
+ ]
+}

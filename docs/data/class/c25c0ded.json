@@ -1,0 +1,1646 @@
+{
+ "class": "ט' - 5",
+ "updated": "2026-11-16T23:49+02:00",
+ "days": [
+  {
+   "date": "2026-11-15",
+   "weekday": "יום ראשון",
+   "holidays": []
+  },
+  {
+   "date": "2026-11-16",
+   "weekday": "יום שני",
+   "holidays": [
+    "יום הזיכרון לדוד בן גוריון"
+   ]
+  },
+  {
+   "date": "2026-11-17",
+   "weekday": "יום שלישי",
+   "holidays": []
+  },
+  {
+   "date": "2026-11-18",
+   "weekday": "יום רביעי",
+   "holidays": []
+  },
+  {
+   "date": "2026-11-19",
+   "weekday": "יום חמישי",
+   "holidays": []
+  },
+  {
+   "date": "2026-11-20",
+   "weekday": "יום שישי",
+   "holidays": []
+  },
+  {
+   "date": "2026-11-22",
+   "weekday": "יום ראשון",
+   "holidays": []
+  },
+  {
+   "date": "2026-11-23",
+   "weekday": "יום שני",
+   "holidays": []
+  },
+  {
+   "date": "2026-11-24",
+   "weekday": "יום שלישי",
+   "holidays": []
+  },
+  {
+   "date": "2026-11-25",
+   "weekday": "יום רביעי",
+   "holidays": []
+  },
+  {
+   "date": "2026-11-26",
+   "weekday": "יום חמישי",
+   "holidays": []
+  },
+  {
+   "date": "2026-11-27",
+   "weekday": "יום שישי",
+   "holidays": []
+  }
+ ],
+ "ends": {
+  "2026-11-15": {
+   "now": {
+    "hour": 10,
+    "end": "16:45"
+   },
+   "regular": {
+    "hour": 10,
+    "end": "16:45"
+   }
+  },
+  "2026-11-16": {
+   "now": {
+    "hour": 9,
+    "end": "16:00"
+   },
+   "regular": {
+    "hour": 9,
+    "end": "16:00"
+   }
+  },
+  "2026-11-17": {
+   "now": {
+    "hour": 6,
+    "end": "13:00"
+   },
+   "regular": {
+    "hour": 6,
+    "end": "13:00"
+   }
+  },
+  "2026-11-18": {
+   "now": {
+    "hour": 9,
+    "end": "16:00"
+   },
+   "regular": {
+    "hour": 9,
+    "end": "16:00"
+   }
+  },
+  "2026-11-19": {
+   "now": {
+    "hour": 6,
+    "end": "13:00"
+   },
+   "regular": {
+    "hour": 6,
+    "end": "13:00"
+   }
+  },
+  "2026-11-22": {
+   "now": {
+    "hour": 10,
+    "end": "16:45"
+   },
+   "regular": {
+    "hour": 10,
+    "end": "16:45"
+   }
+  },
+  "2026-11-23": {
+   "now": {
+    "hour": 9,
+    "end": "16:00"
+   },
+   "regular": {
+    "hour": 9,
+    "end": "16:00"
+   }
+  },
+  "2026-11-24": {
+   "now": {
+    "hour": 6,
+    "end": "13:00"
+   },
+   "regular": {
+    "hour": 6,
+    "end": "13:00"
+   }
+  },
+  "2026-11-25": {
+   "now": {
+    "hour": 9,
+    "end": "16:00"
+   },
+   "regular": {
+    "hour": 9,
+    "end": "16:00"
+   }
+  },
+  "2026-11-26": {
+   "now": {
+    "hour": 6,
+    "end": "13:00"
+   },
+   "regular": {
+    "hour": 6,
+    "end": "13:00"
+   }
+  }
+ },
+ "slots": [
+  {
+   "date": "2026-11-15",
+   "hour": 1,
+   "start": "08:10",
+   "end": "08:55",
+   "lessons": [
+    {
+     "subject": "חשמל+אלק'",
+     "room": "",
+     "teacher": "יעקובי עוזיאל"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-15",
+   "hour": 2,
+   "start": "08:55",
+   "end": "09:40",
+   "lessons": [
+    {
+     "subject": "חשמל+אלק'",
+     "room": "",
+     "teacher": "יעקובי עוזיאל"
+    },
+    {
+     "subject": "חשמל+אלק'",
+     "room": "",
+     "teacher": "שיראזי עידו"
+    },
+    {
+     "subject": "חשמל+אלק'",
+     "room": "",
+     "teacher": "אוחיון איתי"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-15",
+   "hour": 3,
+   "start": "09:55",
+   "end": "10:40",
+   "lessons": [],
+   "changes": [
+    {
+     "type": "מבחן",
+     "text": "מבחן בתנך שכבה ט' , 83 ט 5 · לקבוצה של רביבו ליזה"
+    }
+   ],
+   "removed": [
+    {
+     "subject": "אנגלית",
+     "room": "",
+     "teacher": "ניסנוב לאה"
+    }
+   ]
+  },
+  {
+   "date": "2026-11-15",
+   "hour": 4,
+   "start": "10:40",
+   "end": "11:25",
+   "lessons": [],
+   "changes": [
+    {
+     "type": "מבחן",
+     "text": "מבחן בתנך שכבה ט' , 83 ט 5 · לקבוצה של רביבו ליזה"
+    }
+   ],
+   "removed": [
+    {
+     "subject": "מתמטיקה",
+     "room": "",
+     "teacher": "עמאר לורין"
+    },
+    {
+     "subject": "מתמטיקה",
+     "room": "",
+     "teacher": "סינואני אסתר"
+    },
+    {
+     "subject": "מתמטיקה",
+     "room": "",
+     "teacher": "צרפתי סיגל"
+    }
+   ]
+  },
+  {
+   "date": "2026-11-15",
+   "hour": 5,
+   "start": "11:30",
+   "end": "12:15",
+   "lessons": [
+    {
+     "subject": "אוריינות מחשב ומידע",
+     "room": "",
+     "teacher": "אוחיון אריאל ברוך"
+    },
+    {
+     "subject": "אוריינות מחשב ומידע",
+     "room": "",
+     "teacher": "פנחס שחר"
+    },
+    {
+     "subject": "אוריינות מחשב ומידע",
+     "room": "",
+     "teacher": "בהנסי עדי"
+    },
+    {
+     "subject": "אוריינות מחשב ומידע",
+     "room": "",
+     "teacher": "יעקובי עוזיאל"
+    },
+    {
+     "subject": "אוריינות מחשב ומידע",
+     "room": "",
+     "teacher": "בריילובסקי יקטרינה יהל"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-15",
+   "hour": 6,
+   "start": "12:15",
+   "end": "13:00",
+   "lessons": [
+    {
+     "subject": "חינוך פיננסי",
+     "room": "",
+     "teacher": "זינמן ירון"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-15",
+   "hour": 7,
+   "start": "13:40",
+   "end": "14:25",
+   "lessons": [
+    {
+     "subject": "ספרות",
+     "room": "",
+     "teacher": "שויד הודיה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-15",
+   "hour": 8,
+   "start": "14:25",
+   "end": "15:10",
+   "lessons": [
+    {
+     "subject": "חיל האוויר-שעת מק\"ס",
+     "room": "",
+     "teacher": "יעקובי עוזיאל"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-15",
+   "hour": 9,
+   "start": "15:15",
+   "end": "16:00",
+   "lessons": [
+    {
+     "subject": "לשון עולים",
+     "room": "",
+     "teacher": "מורד סימה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-15",
+   "hour": 10,
+   "start": "16:00",
+   "end": "16:45",
+   "lessons": [
+    {
+     "subject": "לשון עולים",
+     "room": "",
+     "teacher": "מורד סימה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-16",
+   "hour": 1,
+   "start": "08:10",
+   "end": "08:55",
+   "lessons": [
+    {
+     "subject": "חינוך גופני",
+     "room": "",
+     "teacher": "נאור גיא"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-16",
+   "hour": 2,
+   "start": "08:55",
+   "end": "09:40",
+   "lessons": [
+    {
+     "subject": "חינוך גופני",
+     "room": "",
+     "teacher": "נאור גיא"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-16",
+   "hour": 3,
+   "start": "09:55",
+   "end": "10:40",
+   "lessons": [
+    {
+     "subject": "מתמטיקה",
+     "room": "",
+     "teacher": "סינואני אסתר"
+    },
+    {
+     "subject": "מתמטיקה",
+     "room": "",
+     "teacher": "עמאר לורין"
+    }
+   ],
+   "changes": [
+    {
+     "type": "מילוי מקום",
+     "text": "צרפתי סיגל <- גלילוביץ זוהר 78 ט-4"
+    }
+   ],
+   "removed": [
+    {
+     "subject": "מתמטיקה",
+     "room": "",
+     "teacher": "צרפתי סיגל"
+    }
+   ]
+  },
+  {
+   "date": "2026-11-16",
+   "hour": 4,
+   "start": "10:40",
+   "end": "11:25",
+   "lessons": [
+    {
+     "subject": "מתמטיקה",
+     "room": "",
+     "teacher": "עמאר לורין"
+    },
+    {
+     "subject": "מתמטיקה",
+     "room": "",
+     "teacher": "סינואני אסתר"
+    }
+   ],
+   "changes": [
+    {
+     "type": "מילוי מקום",
+     "text": "צרפתי סיגל <- גלילוביץ זוהר 78 ט-4"
+    }
+   ],
+   "removed": [
+    {
+     "subject": "מתמטיקה",
+     "room": "",
+     "teacher": "צרפתי סיגל"
+    }
+   ]
+  },
+  {
+   "date": "2026-11-16",
+   "hour": 5,
+   "start": "11:30",
+   "end": "12:15",
+   "lessons": [
+    {
+     "subject": "אנגלית",
+     "room": "",
+     "teacher": "ניסנוב לאה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-16",
+   "hour": 6,
+   "start": "12:15",
+   "end": "13:00",
+   "lessons": [
+    {
+     "subject": "ערבית",
+     "room": "",
+     "teacher": "עיסמי אייל"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-16",
+   "hour": 7,
+   "start": "13:40",
+   "end": "14:25",
+   "lessons": [
+    {
+     "subject": "חינוך תעבורתי",
+     "room": "",
+     "teacher": "עיסמי אייל"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-16",
+   "hour": 8,
+   "start": "14:25",
+   "end": "15:10",
+   "lessons": [
+    {
+     "subject": "לשון",
+     "room": "",
+     "teacher": "מורד סימה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-16",
+   "hour": 9,
+   "start": "15:15",
+   "end": "16:00",
+   "lessons": [
+    {
+     "subject": "לשון",
+     "room": "",
+     "teacher": "מורד סימה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-17",
+   "hour": 1,
+   "start": "08:10",
+   "end": "08:55",
+   "lessons": [],
+   "changes": [
+    {
+     "type": "ביטול / שעה חופשית",
+     "text": "ביטול תנ\"ך, רביבו ליזה"
+    }
+   ],
+   "removed": [
+    {
+     "subject": "תנ\"ך",
+     "room": "",
+     "teacher": "רביבו ליזה"
+    }
+   ]
+  },
+  {
+   "date": "2026-11-17",
+   "hour": 2,
+   "start": "08:55",
+   "end": "09:40",
+   "lessons": [
+    {
+     "subject": "פיסיקה",
+     "room": "",
+     "teacher": "עמאר לורין"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-17",
+   "hour": 3,
+   "start": "09:55",
+   "end": "10:40",
+   "lessons": [
+    {
+     "subject": "מתמטיקה",
+     "room": "",
+     "teacher": "סינואני אסתר"
+    },
+    {
+     "subject": "מתמטיקה",
+     "room": "",
+     "teacher": "עמאר לורין"
+    }
+   ],
+   "changes": [
+    {
+     "type": "מילוי מקום",
+     "text": "צרפתי סיגל <- ארשבסקי אדם 78 ט-4"
+    }
+   ],
+   "removed": [
+    {
+     "subject": "מתמטיקה",
+     "room": "",
+     "teacher": "צרפתי סיגל"
+    }
+   ]
+  },
+  {
+   "date": "2026-11-17",
+   "hour": 4,
+   "start": "10:40",
+   "end": "11:25",
+   "lessons": [
+    {
+     "subject": "מתמטיקה",
+     "room": "",
+     "teacher": "סינואני אסתר"
+    },
+    {
+     "subject": "מתמטיקה",
+     "room": "",
+     "teacher": "עמאר לורין"
+    }
+   ],
+   "changes": [
+    {
+     "type": "מילוי מקום",
+     "text": "צרפתי סיגל <- ארשבסקי אדם 78 ט-4"
+    }
+   ],
+   "removed": [
+    {
+     "subject": "מתמטיקה",
+     "room": "",
+     "teacher": "צרפתי סיגל"
+    }
+   ]
+  },
+  {
+   "date": "2026-11-17",
+   "hour": 5,
+   "start": "11:30",
+   "end": "12:15",
+   "lessons": [
+    {
+     "subject": "לשון",
+     "room": "",
+     "teacher": "מורד סימה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-17",
+   "hour": 6,
+   "start": "12:15",
+   "end": "13:00",
+   "lessons": [
+    {
+     "subject": "ערבית",
+     "room": "",
+     "teacher": "עיסמי אייל"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-18",
+   "hour": 1,
+   "start": "08:10",
+   "end": "08:55",
+   "lessons": [
+    {
+     "subject": "אנגלית",
+     "room": "",
+     "teacher": "ניסנוב לאה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-18",
+   "hour": 2,
+   "start": "08:55",
+   "end": "09:40",
+   "lessons": [
+    {
+     "subject": "אנגלית",
+     "room": "",
+     "teacher": "ניסנוב לאה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-18",
+   "hour": 3,
+   "start": "09:55",
+   "end": "10:40",
+   "lessons": [],
+   "changes": [
+    {
+     "type": "מבחן",
+     "text": "מבחן באזרחות שכבה ט', 83 ט 5 · לקבוצה של גוזלן אורן"
+    }
+   ],
+   "removed": [
+    {
+     "subject": "היסטוריה",
+     "room": "",
+     "teacher": "אוליניקוב יוליה"
+    }
+   ]
+  },
+  {
+   "date": "2026-11-18",
+   "hour": 4,
+   "start": "10:40",
+   "end": "11:25",
+   "lessons": [],
+   "changes": [
+    {
+     "type": "מבחן",
+     "text": "מבחן באזרחות שכבה ט', 83 ט 5 · לקבוצה של גוזלן אורן"
+    }
+   ],
+   "removed": [
+    {
+     "subject": "ערבית",
+     "room": "",
+     "teacher": "עיסמי אייל"
+    }
+   ]
+  },
+  {
+   "date": "2026-11-18",
+   "hour": 5,
+   "start": "11:30",
+   "end": "12:15",
+   "lessons": [
+    {
+     "subject": "פיסיקה",
+     "room": "",
+     "teacher": "עמאר לורין"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-18",
+   "hour": 6,
+   "start": "12:15",
+   "end": "13:00",
+   "lessons": [
+    {
+     "subject": "אוריינות מחשב ומידע",
+     "room": "",
+     "teacher": "אוחיון אריאל ברוך"
+    },
+    {
+     "subject": "אוריינות מחשב ומידע",
+     "room": "",
+     "teacher": "בהנסי עדי"
+    },
+    {
+     "subject": "אוריינות מחשב ומידע",
+     "room": "",
+     "teacher": "בריילובסקי יקטרינה יהל"
+    },
+    {
+     "subject": "אוריינות מחשב ומידע",
+     "room": "",
+     "teacher": "פנחס שחר"
+    },
+    {
+     "subject": "אוריינות מחשב ומידע",
+     "room": "",
+     "teacher": "יעקובי עוזיאל"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-18",
+   "hour": 7,
+   "start": "13:40",
+   "end": "14:25",
+   "lessons": [
+    {
+     "subject": "עמ\"י",
+     "room": "",
+     "teacher": "בריילובסקי יקטרינה יהל"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-18",
+   "hour": 8,
+   "start": "14:25",
+   "end": "15:10",
+   "lessons": [
+    {
+     "subject": "אזרחות",
+     "room": "",
+     "teacher": "גוזלן אורן"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-18",
+   "hour": 9,
+   "start": "15:15",
+   "end": "16:00",
+   "lessons": [
+    {
+     "subject": "אזרחות",
+     "room": "",
+     "teacher": "גוזלן אורן"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-19",
+   "hour": 1,
+   "start": "08:10",
+   "end": "08:55",
+   "lessons": [
+    {
+     "subject": "כישורי חיים",
+     "room": "",
+     "teacher": "צברי אולגה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-19",
+   "hour": 2,
+   "start": "08:55",
+   "end": "09:40",
+   "lessons": [
+    {
+     "subject": "תנ\"ך",
+     "room": "",
+     "teacher": "רביבו ליזה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-19",
+   "hour": 3,
+   "start": "09:55",
+   "end": "10:40",
+   "lessons": [
+    {
+     "subject": "היסטוריה",
+     "room": "",
+     "teacher": "אוליניקוב יוליה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-19",
+   "hour": 4,
+   "start": "10:40",
+   "end": "11:25",
+   "lessons": [
+    {
+     "subject": "חינוך",
+     "room": "",
+     "teacher": "ניסנוב לאה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-19",
+   "hour": 5,
+   "start": "11:30",
+   "end": "12:15",
+   "lessons": [
+    {
+     "subject": "ספרות",
+     "room": "",
+     "teacher": "שויד הודיה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-19",
+   "hour": 6,
+   "start": "12:15",
+   "end": "13:00",
+   "lessons": [
+    {
+     "subject": "מכונות רובוטיקה",
+     "room": "",
+     "teacher": "שרייפר מקסים"
+    },
+    {
+     "subject": "מכונות רובוטיקה",
+     "room": "",
+     "teacher": "ניימן אסתל"
+    },
+    {
+     "subject": "מכונות רובוטיקה",
+     "room": "",
+     "teacher": "פרץ מורן"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-22",
+   "hour": 1,
+   "start": "08:10",
+   "end": "08:55",
+   "lessons": [
+    {
+     "subject": "חשמל+אלק'",
+     "room": "",
+     "teacher": "יעקובי עוזיאל"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-22",
+   "hour": 2,
+   "start": "08:55",
+   "end": "09:40",
+   "lessons": [
+    {
+     "subject": "חשמל+אלק'",
+     "room": "",
+     "teacher": "יעקובי עוזיאל"
+    },
+    {
+     "subject": "חשמל+אלק'",
+     "room": "",
+     "teacher": "שיראזי עידו"
+    },
+    {
+     "subject": "חשמל+אלק'",
+     "room": "",
+     "teacher": "אוחיון איתי"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-22",
+   "hour": 3,
+   "start": "09:55",
+   "end": "10:40",
+   "lessons": [
+    {
+     "subject": "אנגלית",
+     "room": "",
+     "teacher": "ניסנוב לאה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-22",
+   "hour": 4,
+   "start": "10:40",
+   "end": "11:25",
+   "lessons": [
+    {
+     "subject": "מתמטיקה",
+     "room": "",
+     "teacher": "עמאר לורין"
+    },
+    {
+     "subject": "מתמטיקה",
+     "room": "",
+     "teacher": "סינואני אסתר"
+    },
+    {
+     "subject": "מתמטיקה",
+     "room": "",
+     "teacher": "צרפתי סיגל"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-22",
+   "hour": 5,
+   "start": "11:30",
+   "end": "12:15",
+   "lessons": [],
+   "changes": [
+    {
+     "type": "אירוע",
+     "text": "אורח חיים בריא ט5"
+    }
+   ],
+   "removed": [
+    {
+     "subject": "אוריינות מחשב ומידע",
+     "room": "",
+     "teacher": "אוחיון אריאל ברוך"
+    },
+    {
+     "subject": "אוריינות מחשב ומידע",
+     "room": "",
+     "teacher": "פנחס שחר"
+    },
+    {
+     "subject": "אוריינות מחשב ומידע",
+     "room": "",
+     "teacher": "בהנסי עדי"
+    },
+    {
+     "subject": "אוריינות מחשב ומידע",
+     "room": "",
+     "teacher": "יעקובי עוזיאל"
+    },
+    {
+     "subject": "אוריינות מחשב ומידע",
+     "room": "",
+     "teacher": "בריילובסקי יקטרינה יהל"
+    }
+   ]
+  },
+  {
+   "date": "2026-11-22",
+   "hour": 6,
+   "start": "12:15",
+   "end": "13:00",
+   "lessons": [
+    {
+     "subject": "חינוך פיננסי",
+     "room": "",
+     "teacher": "זינמן ירון"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-22",
+   "hour": 7,
+   "start": "13:40",
+   "end": "14:25",
+   "lessons": [
+    {
+     "subject": "ספרות",
+     "room": "",
+     "teacher": "שויד הודיה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-22",
+   "hour": 8,
+   "start": "14:25",
+   "end": "15:10",
+   "lessons": [
+    {
+     "subject": "חיל האוויר-שעת מק\"ס",
+     "room": "",
+     "teacher": "יעקובי עוזיאל"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-22",
+   "hour": 9,
+   "start": "15:15",
+   "end": "16:00",
+   "lessons": [
+    {
+     "subject": "לשון עולים",
+     "room": "",
+     "teacher": "מורד סימה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-22",
+   "hour": 10,
+   "start": "16:00",
+   "end": "16:45",
+   "lessons": [
+    {
+     "subject": "לשון עולים",
+     "room": "",
+     "teacher": "מורד סימה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-23",
+   "hour": 1,
+   "start": "08:10",
+   "end": "08:55",
+   "lessons": [
+    {
+     "subject": "חינוך גופני",
+     "room": "",
+     "teacher": "נאור גיא"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-23",
+   "hour": 2,
+   "start": "08:55",
+   "end": "09:40",
+   "lessons": [
+    {
+     "subject": "חינוך גופני",
+     "room": "",
+     "teacher": "נאור גיא"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-23",
+   "hour": 3,
+   "start": "09:55",
+   "end": "10:40",
+   "lessons": [
+    {
+     "subject": "מתמטיקה",
+     "room": "",
+     "teacher": "צרפתי סיגל"
+    },
+    {
+     "subject": "מתמטיקה",
+     "room": "",
+     "teacher": "סינואני אסתר"
+    },
+    {
+     "subject": "מתמטיקה",
+     "room": "",
+     "teacher": "עמאר לורין"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-23",
+   "hour": 4,
+   "start": "10:40",
+   "end": "11:25",
+   "lessons": [
+    {
+     "subject": "מתמטיקה",
+     "room": "",
+     "teacher": "עמאר לורין"
+    },
+    {
+     "subject": "מתמטיקה",
+     "room": "",
+     "teacher": "צרפתי סיגל"
+    },
+    {
+     "subject": "מתמטיקה",
+     "room": "",
+     "teacher": "סינואני אסתר"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-23",
+   "hour": 5,
+   "start": "11:30",
+   "end": "12:15",
+   "lessons": [
+    {
+     "subject": "אנגלית",
+     "room": "",
+     "teacher": "ניסנוב לאה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-23",
+   "hour": 6,
+   "start": "12:15",
+   "end": "13:00",
+   "lessons": [
+    {
+     "subject": "ערבית",
+     "room": "",
+     "teacher": "עיסמי אייל"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-23",
+   "hour": 7,
+   "start": "13:40",
+   "end": "14:25",
+   "lessons": [
+    {
+     "subject": "חינוך תעבורתי",
+     "room": "",
+     "teacher": "עיסמי אייל"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-23",
+   "hour": 8,
+   "start": "14:25",
+   "end": "15:10",
+   "lessons": [
+    {
+     "subject": "לשון",
+     "room": "",
+     "teacher": "מורד סימה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-23",
+   "hour": 9,
+   "start": "15:15",
+   "end": "16:00",
+   "lessons": [
+    {
+     "subject": "לשון",
+     "room": "",
+     "teacher": "מורד סימה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-24",
+   "hour": 1,
+   "start": "08:10",
+   "end": "08:55",
+   "lessons": [
+    {
+     "subject": "תנ\"ך",
+     "room": "",
+     "teacher": "רביבו ליזה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-24",
+   "hour": 2,
+   "start": "08:55",
+   "end": "09:40",
+   "lessons": [
+    {
+     "subject": "פיסיקה",
+     "room": "",
+     "teacher": "עמאר לורין"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-24",
+   "hour": 3,
+   "start": "09:55",
+   "end": "10:40",
+   "lessons": [
+    {
+     "subject": "מתמטיקה",
+     "room": "",
+     "teacher": "סינואני אסתר"
+    },
+    {
+     "subject": "מתמטיקה",
+     "room": "",
+     "teacher": "עמאר לורין"
+    },
+    {
+     "subject": "מתמטיקה",
+     "room": "",
+     "teacher": "צרפתי סיגל"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-24",
+   "hour": 4,
+   "start": "10:40",
+   "end": "11:25",
+   "lessons": [
+    {
+     "subject": "מתמטיקה",
+     "room": "",
+     "teacher": "סינואני אסתר"
+    },
+    {
+     "subject": "מתמטיקה",
+     "room": "",
+     "teacher": "צרפתי סיגל"
+    },
+    {
+     "subject": "מתמטיקה",
+     "room": "",
+     "teacher": "עמאר לורין"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-24",
+   "hour": 5,
+   "start": "11:30",
+   "end": "12:15",
+   "lessons": [
+    {
+     "subject": "לשון",
+     "room": "",
+     "teacher": "מורד סימה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-24",
+   "hour": 6,
+   "start": "12:15",
+   "end": "13:00",
+   "lessons": [
+    {
+     "subject": "ערבית",
+     "room": "",
+     "teacher": "עיסמי אייל"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-25",
+   "hour": 1,
+   "start": "08:10",
+   "end": "08:55",
+   "lessons": [
+    {
+     "subject": "אנגלית",
+     "room": "",
+     "teacher": "ניסנוב לאה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-25",
+   "hour": 2,
+   "start": "08:55",
+   "end": "09:40",
+   "lessons": [
+    {
+     "subject": "אנגלית",
+     "room": "",
+     "teacher": "ניסנוב לאה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-25",
+   "hour": 3,
+   "start": "09:55",
+   "end": "10:40",
+   "lessons": [
+    {
+     "subject": "היסטוריה",
+     "room": "",
+     "teacher": "אוליניקוב יוליה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-25",
+   "hour": 4,
+   "start": "10:40",
+   "end": "11:25",
+   "lessons": [
+    {
+     "subject": "ערבית",
+     "room": "",
+     "teacher": "עיסמי אייל"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-25",
+   "hour": 5,
+   "start": "11:30",
+   "end": "12:15",
+   "lessons": [
+    {
+     "subject": "פיסיקה",
+     "room": "",
+     "teacher": "עמאר לורין"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-25",
+   "hour": 6,
+   "start": "12:15",
+   "end": "13:00",
+   "lessons": [
+    {
+     "subject": "אוריינות מחשב ומידע",
+     "room": "",
+     "teacher": "אוחיון אריאל ברוך"
+    },
+    {
+     "subject": "אוריינות מחשב ומידע",
+     "room": "",
+     "teacher": "בהנסי עדי"
+    },
+    {
+     "subject": "אוריינות מחשב ומידע",
+     "room": "",
+     "teacher": "בריילובסקי יקטרינה יהל"
+    },
+    {
+     "subject": "אוריינות מחשב ומידע",
+     "room": "",
+     "teacher": "פנחס שחר"
+    },
+    {
+     "subject": "אוריינות מחשב ומידע",
+     "room": "",
+     "teacher": "יעקובי עוזיאל"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-25",
+   "hour": 7,
+   "start": "13:40",
+   "end": "14:25",
+   "lessons": [
+    {
+     "subject": "עמ\"י",
+     "room": "",
+     "teacher": "בריילובסקי יקטרינה יהל"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-25",
+   "hour": 8,
+   "start": "14:25",
+   "end": "15:10",
+   "lessons": [
+    {
+     "subject": "אזרחות",
+     "room": "",
+     "teacher": "גוזלן אורן"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-25",
+   "hour": 9,
+   "start": "15:15",
+   "end": "16:00",
+   "lessons": [
+    {
+     "subject": "אזרחות",
+     "room": "",
+     "teacher": "גוזלן אורן"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-26",
+   "hour": 1,
+   "start": "08:10",
+   "end": "08:55",
+   "lessons": [
+    {
+     "subject": "כישורי חיים",
+     "room": "",
+     "teacher": "צברי אולגה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-26",
+   "hour": 2,
+   "start": "08:55",
+   "end": "09:40",
+   "lessons": [
+    {
+     "subject": "תנ\"ך",
+     "room": "",
+     "teacher": "רביבו ליזה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-26",
+   "hour": 3,
+   "start": "09:55",
+   "end": "10:40",
+   "lessons": [
+    {
+     "subject": "היסטוריה",
+     "room": "",
+     "teacher": "אוליניקוב יוליה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-26",
+   "hour": 4,
+   "start": "10:40",
+   "end": "11:25",
+   "lessons": [
+    {
+     "subject": "חינוך",
+     "room": "",
+     "teacher": "ניסנוב לאה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-26",
+   "hour": 5,
+   "start": "11:30",
+   "end": "12:15",
+   "lessons": [
+    {
+     "subject": "ספרות",
+     "room": "",
+     "teacher": "שויד הודיה"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  },
+  {
+   "date": "2026-11-26",
+   "hour": 6,
+   "start": "12:15",
+   "end": "13:00",
+   "lessons": [
+    {
+     "subject": "מכונות רובוטיקה",
+     "room": "",
+     "teacher": "שרייפר מקסים"
+    },
+    {
+     "subject": "מכונות רובוטיקה",
+     "room": "",
+     "teacher": "ניימן אסתל"
+    },
+    {
+     "subject": "מכונות רובוטיקה",
+     "room": "",
+     "teacher": "פרץ מורן"
+    }
+   ],
+   "changes": [],
+   "removed": []
+  }
+ ]
+}
