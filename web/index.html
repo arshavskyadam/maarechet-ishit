@@ -814,13 +814,14 @@ function startApp(DATA, TEAM) {
       var st = slotState(x), shown = x.lessons.length ? x.lessons : x.removed;
       var subs = shown.map(function (l) { return l.subject; }).filter(function (v, i, a) { return v && a.indexOf(v) === i; });
       var teach = shown.map(function (l) { return l.teacher; }).filter(function (v, i, a) { return v && a.indexOf(v) === i; });
+      var rooms = shown.map(function (l) { return l.room; }).filter(function (v, i, a) { return v && a.indexOf(v) === i; });
       var title = subs.length > 2 ? subs.slice(0, 2).join(" / ") + " +" + (subs.length - 2) : subs.join(" / ") || (x.changes[0] ? fill(x.changes[0].text) : "");
       var flag = st.off ? "לא מתקיים" : x.changes.length ? x.changes[0].type + ": " + fill(x.changes[0].text) : x.removed.length ? "חלק מהשיעורים בוטלו" : "";
-      var more = shown.map(function (l) { return '<div class="ln"><b>' + esc(l.subject) + '</b><span>' + esc(l.teacher) + (l.room ? " · " + esc(l.room) : "") + '</span></div>'; }).join("") +
+      var more = shown.map(function (l) { return '<div class="ln"><b>' + esc(l.subject) + '</b><span>' + esc(l.teacher) + (l.room ? " · חדר " + esc(l.room) : "") + '</span></div>'; }).join("") +
         x.changes.slice(st.off ? 0 : 1).map(function (c) { return '<div class="ln"><b style="color:var(--warn)">' + esc(c.type) + '</b><span>' + esc(fill(c.text)) + '</span></div>'; }).join("") +
         (x.lessons.length && x.removed.length ? x.removed.map(function (l) { return '<div class="ln"><b style="color:var(--bad)">בוטל</b><span>' + esc(l.subject) + " · " + esc(l.teacher) + '</span></div>'; }).join("") : "");
       rows += '<details class="crow' + (st.off ? " off" : st.chg ? " chg" : "") + '"><summary><span class="hr">' + h + '</span><span class="tm">' + esc(x.start || t) + '</span><span class="sb">' + esc(title) + '</span>' +
-        (flag ? '<span class="flag">' + esc(flag) + '</span>' : '<span class="tc">' + esc(teach.slice(0, 2).join(", ") + (teach.length > 2 ? " ועוד " + (teach.length - 2) : "")) + '</span>') +
+        (flag ? '<span class="flag">' + esc(flag) + '</span>' : '<span class="tc">' + esc(teach.slice(0, 2).join(", ") + (teach.length > 2 ? " ועוד " + (teach.length - 2) : "") + (rooms.length === 1 ? " · חדר " + rooms[0] : rooms.length > 1 ? " · " + rooms.length + " חדרים" : "")) + '</span>') +
         '</summary><div class="more">' + more + '</div></details>';
     }
     var e = (f.ends || {})[date], end = "";
@@ -828,7 +829,7 @@ function startApp(DATA, TEAM) {
       var diff = e.regular && e.regular.hour !== e.now.hour;
       end = '<div class="cend">הכיתה מסיימת ב-' + esc(e.now.end) + ' <span class="muted">(שעה ' + e.now.hour + ')' + (diff ? ' · בדרך כלל ' + esc(e.regular.end) : "") + '</span></div>';
     }
-    return hol + '<div class="crows">' + rows + '</div>' + end + '<p class="muted" style="margin:0;font-size:.8rem">לחיצה על שעה מציגה את כל המורים והשינויים.</p>';
+    return hol + '<div class="crows">' + rows + '</div>' + end + '<p class="muted" style="margin:0;font-size:.8rem">לחיצה על שעה מציגה את כל המורים, החדרים והשינויים.</p>';
   }
   function clsWeek(f, days) {
     var sl = f.slots.filter(function (x) { return days.some(function (d) { return d.date === x.date; }); });

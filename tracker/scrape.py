@@ -91,7 +91,7 @@ def parse_lesson(fragment):
     subject = clean(subject.group(1)) if subject else ""
     head, _, tail = fragment.partition("<br")
     tail = tail.split(">", 1)[1] if ">" in tail else ""
-    room = re.search(r"</b>\s*\((.*?)\)", head, re.S)
+    room = re.search(r"</b>(?:\s|&nbsp;|\xa0)*\((.*?)\)", head, re.S)
     return {
         "subject": subject,
         "room": clean(room.group(1)) if room else "",
