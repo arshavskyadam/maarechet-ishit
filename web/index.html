@@ -288,6 +288,17 @@ function startApp(DATA, TEAM) {
 
   document.getElementById("who").textContent = DATA.teacher;
   var when = stamp(L.scraped_at);
+  // Warn when the data is stale: more than a day on a school day, more than three days over the weekend.
+  (function () {
+    var age = (Date.now() - new Date(L.scraped_at).getTime()) / 36e5;
+    var dow = new Date().getDay(), limit = (dow === 5 || dow === 6 || dow === 0) ? 72 : 26;
+    if (age > limit) {
+      var w = document.createElement("div");
+      w.className = "holiday";
+      w.textContent = "⚠️ המערכת לא התעדכנה מאז " + when + ". ייתכן שהמידע לא עדכני, בדקו בשחף.";
+      document.querySelector("#app header").appendChild(w);
+    }
+  })();
   document.getElementById("meta").innerHTML =
     '<span>נבדק: <span class="mono">' + esc(when) + '</span></span>' +
     (L.site_update ? '<span>' + esc(L.site_update) + '</span>' : "") +

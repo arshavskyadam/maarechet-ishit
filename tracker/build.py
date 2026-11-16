@@ -123,7 +123,8 @@ def load_staff(raw):
         if raw and not name:
             print(f"note: '{typed}' has no lessons on the school site")
         homerooms = [h for h in [r.get("כיתת חינוך", ""), r.get("כיתת חינוך נוספת", "")] if h]
-        person = {"name": name, "as_given": typed, "display": name or typed,
+        code = r.get("קוד", "").strip()
+        person = {"name": name, "as_given": typed, "display": name or typed, "code": code,
                   "roles": [role_label(x) for x in r.get("תפקיד", "").split(",") if x.strip()]}
         if homerooms:
             person["homeroom"], person["homeroom_extra"] = homerooms[0], homerooms[1:]
@@ -244,7 +245,7 @@ def build_person(person, raw, extras, now, offline, morning):
     print(f"{display}: {active} lessons, {len(found)} changes ({len(today_found)} today)"
           + (f", notification {sent}" if sent else ""))
     entry = {"id": pid, "name": display, "roles": person.get("roles", []), "homerooms": homerooms}
-    pin = CONFIG.get("pin_hashes", {}).get(display)
+    pin = pin_hash(pid, person["code"]) if person.get("code") else CONFIG.get("pin_hashes", {}).get(display)
     if pin:
         entry["pin"] = pin  # sha256("<id>:<code>"); the page asks for the code before showing the person
     return entry
