@@ -655,7 +655,7 @@ function startApp(DATA, TEAM) {
       function isMentor(p) { return p.roles.some(function (r) { return r.indexOf("חונכות") >= 0; }); }
       function mentorBtn(p) {
         var head = p.roles.some(function (r) { return r.indexOf("ראש צוות חונכות") >= 0; });
-        return '<button type="button" class="pbtn" data-id="' + esc(p.id) + '"><b>' + esc(p.name) + '</b><small>' + (head ? "ראש צוות חונכות" : "חונכות") + '</small></button>';
+        return '<button type="button" class="pbtn" data-id="' + esc(p.id) + '"><b>' + esc(p.name) + '</b><small>' + (head ? "ראש צוות חונכות" : "צוות חונכות") + '</small></button>';
       }
       // One card per team: the lead first, then the team's instructors by class.
       var placed = {};
