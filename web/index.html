@@ -169,10 +169,21 @@ body { margin: 0; }
 [hidden] { display: none !important; }
 .picker { display: grid; gap: 14px; }
 .picker input { font: inherit; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); width: 100%; }
-.plist { display: grid; gap: 6px; }
-.plist button { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; text-align: start; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; }
-.plist button b { font-weight: 600; }
-.plist button span { font-size: .8rem; color: var(--muted); }
+.plist { display: grid; gap: 14px; }
+.team { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.team > header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 14px; background: var(--accent-soft); }
+.team > header h2 { font-size: 1rem; font-weight: 700; color: var(--accent); margin: 0; }
+.team > header span { font-size: .75rem; color: var(--muted); }
+.team .body { display: grid; gap: 8px; padding: 10px; }
+.lead { display: flex; align-items: center; gap: 10px; width: 100%; text-align: start; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--accent); background: var(--surface); color: var(--ink); cursor: pointer; font: inherit; }
+.lead .crown { font-size: 1.1rem; }
+.lead b { font-weight: 700; }
+.lead small { display: block; font-size: .75rem; color: var(--muted); }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.pbtn { display: grid; gap: 1px; text-align: start; padding: 9px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; font: inherit; min-width: 0; }
+.pbtn b { font-weight: 600; font-size: .92rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pbtn small { font-size: .74rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pbtn:hover, .lead:hover { border-color: var(--accent); }
 .switch { background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; font-size: .85rem; text-decoration: underline; }
 </style>
 </head>
@@ -183,8 +194,7 @@ body { margin: 0; }
     <h1>המערכת האישית שלי</h1>
     <p class="muted" style="margin:0">בחרו את השם שלכם. הבחירה נשמרת במכשיר הזה, ואפשר להחליף בכל רגע.</p>
   </header>
-  <label for="psearch" class="muted" style="font-size:.85rem">חיפוש לפי שם</label>
-  <input id="psearch" type="search" autocomplete="off" placeholder="למשל: רינה">
+    <input id="psearch" type="search" autocomplete="off" placeholder="🔍 חיפוש לפי שם">
   <div class="plist" id="plist"></div>
 </div>
 <div class="wrap picker" id="pin" dir="rtl" lang="he" hidden>
@@ -635,13 +645,32 @@ function startApp(DATA, TEAM) {
     var list = document.getElementById("plist");
     list.innerHTML = '<p class="muted">טוען…</p>';
     json("data/staff.json").then(function (d) {
-      var people = d.people.slice().sort(function (a, b) { return a.name.localeCompare(b.name, "he"); });
+      var byId = {}; d.people.forEach(function (p) { byId[p.id] = p; });
+      function cls(p) { return p.homerooms.length ? p.homerooms.join(", ") : (p.roles.filter(function (r) { return r.indexOf("ראש צוות") < 0; })[0] || ""); }
+      function btn(p) {
+        return '<button type="button" class="pbtn" data-id="' + esc(p.id) + '"><b>' + esc(p.name) + '</b><small>' + esc(cls(p)) + '</small></button>';
+      }
+      function sortKey(p) { return (p.homerooms[0] || "תתת") + p.name; }
+      // One card per team: the lead first, then the team's instructors by class.
+      var placed = {};
+      var cards = (d.teams || []).map(function (t) {
+        var lead = byId[t.lead];
+        var rest = t.members.map(function (m) { return byId[m.id]; }).filter(function (p) { return p && p !== lead; })
+          .sort(function (a, b) { return sortKey(a).localeCompare(sortKey(b), "he"); });
+        if (lead) placed[lead.id] = 1;
+        rest.forEach(function (p) { placed[p.id] = 1; });
+        return '<section class="team"><header><h2>' + esc(t.name) + '</h2><span>' + (rest.length + (lead ? 1 : 0)) + ' אנשים</span></header><div class="body">' +
+          (lead ? '<button type="button" class="lead" data-id="' + esc(lead.id) + '"><span class="crown">👑</span><span><b>' + esc(lead.name) + '</b><small>ראש צוות' + (lead.homerooms.length ? ' · ' + esc(lead.homerooms.join(", ")) : "") + '</small></span></button>' : "") +
+          '<div class="grid2">' + rest.map(btn).join("") + '</div></div></section>';
+      });
+      var others = d.people.filter(function (p) { return !placed[p.id]; }).sort(function (a, b) { return a.name.localeCompare(b.name, "he"); });
+      if (others.length) cards.push('<section class="team"><header><h2>חונכות ומגמות</h2><span>' + others.length + ' אנשים</span></header><div class="body"><div class="grid2">' + others.map(btn).join("") + '</div></div></section>');
+      var grouped = cards.join("");
+      var all = d.people.slice().sort(function (a, b) { return a.name.localeCompare(b.name, "he"); });
       function draw(q) {
-        var shown = people.filter(function (p) { return !q || p.name.indexOf(q) >= 0 || q.split(" ").every(function (w) { return p.name.indexOf(w) >= 0; }); });
-        list.innerHTML = shown.map(function (p) {
-          var tags = p.roles.concat(p.homerooms.map(function (h) { return "מדריך/ה " + h; })).join(" · ");
-          return '<button type="button" data-id="' + esc(p.id) + '"><b>' + esc(p.name) + '</b><span>' + esc(tags) + '</span></button>';
-        }).join("") || '<p class="muted">לא נמצא שם כזה ברשימה.</p>';
+        if (!q) { list.innerHTML = grouped; return; }
+        var shown = all.filter(function (p) { return q.split(" ").every(function (w) { return p.name.indexOf(w) >= 0; }); });
+        list.innerHTML = shown.length ? '<div class="grid2">' + shown.map(btn).join("") + '</div>' : '<p class="muted">לא נמצא שם כזה ברשימה.</p>';
       }
       draw("");
       document.getElementById("psearch").oninput = function (e) { draw(e.target.value.trim()); };
