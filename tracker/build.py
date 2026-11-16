@@ -92,6 +92,11 @@ def role_label(role):
     return re.sub(r"^רכז(ת)?\s+", "ראש צוות ", role.strip())
 
 
+def class_key(class_name):
+    """"ט' - 3", "ט'3" and "ט 3" all -> "ט3"."""
+    return re.sub(r"[^א-ת0-9]", "", class_name)
+
+
 def grade_of(class_name):
     """"יא'- 2" -> "יא", "י - 6" -> "י"."""
     return re.sub(r"[^א-ת]", "", class_name.split("-")[0])
@@ -190,6 +195,9 @@ def build_person(person, raw, extras, now, offline, morning):
     else:
         keys = {frozenset(display.split()), frozenset(person["as_given"].split())}
         mine = [e for k in keys for e in extras.get(k, [])]
+        # Classes typed by hand ("ט'3", "ט 3") are written as the site writes them ("ט' - 3").
+        site_class = {class_key(c["name"]): c["name"] for c in raw["classes"]}
+        mine = [{**e, "classes": [site_class.get(class_key(c), c) for c in e["classes"]]} for e in mine]
         latest = scrape(name or "\u0000", raw=raw, extra_lessons=mine, homeroom=homerooms[0] if homerooms else None)
         latest["homerooms"] = [homeroom_info(raw, h) for h in homerooms]
         # The page's "end of day" table: the homeroom classes, or for a team lead every class of their grades.

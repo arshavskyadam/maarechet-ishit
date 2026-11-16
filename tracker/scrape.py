@@ -390,6 +390,8 @@ def scrape(name_key, raw=None, end_grades=(), extra_lessons=(), homeroom=None):
     ids = {c["name"]: c["id"] for c in classes}
     agenda = {}
     for class_name in my_classes:
+        if class_name not in ids:  # a class typed by hand in the sheet that the site doesn't know
+            continue
         for tab, kind in (("exams", "מבחן"), ("events", "אירוע")):
             for it in fetch_agenda(ids[class_name], tab, kind):
                 if it["date"] and it["date"] < today.isoformat():
