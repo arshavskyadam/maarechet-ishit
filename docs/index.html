@@ -1158,7 +1158,7 @@ function startApp(DATA, TEAM) {
     var box = document.getElementById("hq");
     document.getElementById("plist").hidden = true; document.getElementById("psearch").hidden = true; document.getElementById("hq-go").hidden = true; box.hidden = false;
     if (!api) { set("hq", JSON.stringify({ code: "", at: Date.now() })); location.reload(); return; }
-    box.innerHTML = '<form class="noteform" id="hq-form" style="border-color:var(--accent)"><label for="hq-code">קוד אנשי מנהלה<input type="password" id="hq-code" inputmode="numeric" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></label>' +
+    box.innerHTML = '<form class="noteform" id="hq-form" style="border-color:var(--accent)"><label for="hq-code">קוד אנשי מנהלה<input type="password" id="hq-code" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" autocapitalize="off" autocorrect="off" spellcheck="false"></label>' +
       '<div class="btns"><button type="submit" class="save" style="background:var(--accent);border-color:var(--accent)">כניסה</button><button type="button" id="hq-back">חזרה</button></div><p class="hint" id="hq-err"></p></form>';
     document.getElementById("hq-back").onclick = function () { location.reload(); };
     document.getElementById("hq-form").onsubmit = function (e) {
