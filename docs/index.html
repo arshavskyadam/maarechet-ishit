@@ -421,6 +421,11 @@ body { margin: 0; }
 // ---- yard duty rows, shared by the instructor's page, the team lead, the commander and administration.
 // Team leads, commanders and administration can change a slot by hand: another person, or no one, and a note.
 var DUTY_NOTES = ["שמירות", "משגיח", "אישי"];
+// Grades 13 and 14 share one yard-duty list, "מכללה".
+var DUTY_GROUPS = ["ט", "י", "יא", "יב", "מכללה"];
+function dGroup(g) { return g === "יג" || g === "יד" ? "מכללה" : g; }
+function dTab(g) { return g === "מכללה" ? g : g + "'"; }
+function dLabel(g) { return g === "מכללה" ? "מכללה" : "שכבה " + g + "'"; }
 var DUTY_TIMES = { 1: "08:10", 2: "08:55", 3: "09:55", 4: "10:40", 5: "11:30", 6: "12:15", 7: "13:40", 8: "14:25", 9: "15:15", 10: "16:00" };
 function dEsc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
 function dGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
@@ -580,7 +585,7 @@ function startApp(DATA, TEAM) {
   function dutyCard(d) {
     var lunch = !!d.role, hh = lunch ? ["", "13:00", "13:40"] : (NH[d.hour] || [d.hour, "", ""]);
     return '<article class="lesson duty"><div class="when"><span class="per">' + (lunch ? "הפסקה" : "שעה " + d.hour) + '</span><span class="t">' + hh[1] + '</span><span class="t2">עד ' + hh[2] + '</span></div>' +
-      '<div class="what"><h3>' + (lunch ? esc(d.role) : "תורן חצר") + ' · שכבה ' + esc(d.grade) + "'</h3>" +
+      '<div class="what"><h3>' + (lunch ? esc(d.role) : "תורן חצר") + ' · ' + esc(dLabel(d.grade)) + '</h3>' +
       '<div class="row"><span class="duty-tag">תורנות</span>' + (d.others.length ? '<span class="muted">יחד עם ' + esc(d.others.join(", ")) + '</span>' : "") + '</div></div></article>';
   }
   var todayISO = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jerusalem" }).format(new Date());
@@ -1217,7 +1222,7 @@ function startApp(DATA, TEAM) {
       return;
     }
     // Each team sees its own grades; administration staff see every grade.
-    var grades = ["ט", "י", "יא", "יב", "יג", "יד"].filter(function (g) { return day[g] && (DATA.hq || day[g].team === DATA.team_name); });
+    var grades = DUTY_GROUPS.filter(function (g) { return day[g] && (DATA.hq || day[g].team === DATA.team_name); });
     var mine = dutyOn(todayISO);
     if (!grades.length) {
       document.getElementById("duty-grades").innerHTML = "";
@@ -1227,8 +1232,8 @@ function startApp(DATA, TEAM) {
       return;
     }
     if (!DT.grade || !day[DT.grade]) DT.grade = mine.length ? mine[0].grade : grades[0];
-    document.getElementById("duty-grades").innerHTML = grades.map(function (g) { return '<button type="button" data-grade="' + g + '" aria-pressed="' + (g === DT.grade) + '">' + g + "'</button>"; }).join("");
-    document.getElementById("duty-title").textContent = "תורני חצר · שכבה " + DT.grade + "' · היום " + dm(todayISO);
+    document.getElementById("duty-grades").innerHTML = grades.map(function (g) { return '<button type="button" data-grade="' + g + '" aria-pressed="' + (g === DT.grade) + '">' + dTab(g) + "</button>"; }).join("");
+    document.getElementById("duty-title").textContent = "תורני חצר · " + dLabel(DT.grade) + " · היום " + dm(todayISO);
     document.getElementById("duty-mine").textContent = mine.length ? "לך יש " + mine.length + " תורנויות היום" : "";
     var body = document.getElementById("duty-body");
     body.innerHTML = dutySlots(DT.grade, day[DT.grade], ME, !!API) + '<p class="muted" style="margin:0;font-size:.8rem">הרשימה נבנית כל בוקר מהמערכת של כל הצוות: רק מי שפנוי באותה שעה, ובחלוקה שווה לפי טבלת צדק חודשית. אם מישהו מקבל שיעור, הוא מוחלף לבד בעדכון הבא.' + (API ? ' כל אחד מהצוות יכול ללחוץ על שורה ולשנות אותה ידנית, למשל כשמישהו בשמירות.' : "") + '</p>' + leadReport();
@@ -1317,14 +1322,14 @@ function startApp(DATA, TEAM) {
     var state = { tab: null, duty: null, rem: null };
     function draw() {
       var day = state.duty && state.duty.days[today];
-      var grades = day ? ["ט", "י", "יא", "יב", "יג", "יד"].filter(function (g) { return day[g]; }) : [];
-      var tabs = grades.map(function (g) { return [g, g + "'"]; });
+      var grades = day ? DUTY_GROUPS.filter(function (g) { return day[g]; }) : [];
+      var tabs = grades.map(function (g) { return [g, dTab(g)]; });
       if (!state.tab || !tabs.some(function (t) { return t[0] === state.tab; })) state.tab = tabs.length ? tabs[0][0] : null;
       var h = '<div class="clspick"><div class="g gr">' + tabs.map(function (t) {
         return '<button type="button" data-hq="' + t[0] + '" aria-pressed="' + (t[0] === state.tab) + '">' + esc(t[1]) + '</button>';
       }).join("") + '</div></div>';
       if (state.tab) {
-        h += '<div class="dayhead"><h2>תורני חצר · שכבה ' + esc(state.tab) + "' · היום</h2></div>" + dutySlots(state.tab, day[state.tab], "", !!api);
+        h += '<div class="dayhead"><h2>תורני חצר · ' + esc(dLabel(state.tab)) + ' · היום</h2></div>' + dutySlots(state.tab, day[state.tab], "", !!api);
       } else h += '<div class="empty">אין רשימת תורני חצר להיום.</div>';
       box.innerHTML = h + '<button type="button" class="hqbtn" id="hq-back2">חזרה לרשימת האנשים</button>';
       box.querySelector(".gr").onclick = function (e) { var b = e.target.closest("button[data-hq]"); if (b) { state.tab = b.getAttribute("data-hq"); draw(); } };
@@ -1376,9 +1381,9 @@ function startApp(DATA, TEAM) {
         }).join("") + '</div></div>';
       if (state.tab === "duty") {
         var day = state.duty && state.duty.days[today];
-        var grades = day ? (team.grades || []).filter(function (g) { return day[g]; }) : [];
+        var grades = day ? (team.grades || []).map(dGroup).filter(function (g, i, all) { return day[g] && all.indexOf(g) === i; }) : [];
         h += grades.length ? grades.map(function (g) {
-          return '<div class="dayhead"><h2>שכבה ' + esc(g) + "'</h2></div>" + dutySlots(g, day[g], "", !!api);
+          return '<div class="dayhead"><h2>' + esc(dLabel(g)) + '</h2></div>' + dutySlots(g, day[g], "", !!api);
         }).join("") : '<div class="empty">אין רשימת תורני חצר להיום.</div>';
       } else if (state.tab === "rep") {
         if (!state.rep) h += '<p class="muted">טוען…</p>';
