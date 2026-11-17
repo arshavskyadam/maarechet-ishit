@@ -278,7 +278,8 @@ def build_duty(raw, now, people, team_defs):
             if l.get("status") != "cancelled" and l.get("hour") is not None:
                 busy.setdefault(person["name"], set()).add((l["date"], l["hour"]))
     known = {p["name"] for p in people}
-    dates = sorted(d for d in raw["days"] if d >= today and datetime.fromisoformat(d).weekday() in (6, 0, 1, 2, 3))
+    # Only today's list: it is made on the first run of the morning and kept up to date through the day.
+    dates = [today] if today in raw["days"] and now.weekday() in (6, 0, 1, 2, 3) else []
     grade_hours = {}
     for (date, hour), entries in raw["slots"].items():
         if hour is None:
@@ -287,7 +288,7 @@ def build_duty(raw, now, people, team_defs):
             if cell["lessons"]:
                 grade_hours.setdefault((date, grade_of(name)), set()).add(hour)
     count = {}
-    days = {d: v for d, v in prev.items() if d < today and d >= (now.date() - timedelta(days=14)).isoformat()}
+    days = {}
 
     def pick(cands, date, key, taken):
         free = [c for c in cands if c not in taken]

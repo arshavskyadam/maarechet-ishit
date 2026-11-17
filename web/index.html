@@ -310,7 +310,7 @@ body { margin: 0; }
     <button role="tab" id="tab-day" aria-selected="true" data-view="day">לפי יום</button>
     <button role="tab" id="tab-week" aria-selected="false" data-view="week">שבוע מלא</button>
     <button role="tab" id="tab-cls" aria-selected="false" data-view="cls">כיתות</button>
-    <button role="tab" id="tab-duty" aria-selected="false" data-view="duty">תורנויות</button>
+    <button role="tab" id="tab-duty" aria-selected="false" data-view="duty">תורני חצר</button>
     <button role="tab" id="tab-agenda" aria-selected="false" data-view="agenda">מבחנים ואירועים</button>
     <button role="tab" id="tab-hist" aria-selected="false" data-view="hist">יומן</button>
     <button role="tab" id="tab-team" aria-selected="false" data-view="team" hidden>זמן לצוות</button>
@@ -989,32 +989,30 @@ function startApp(DATA, TEAM) {
 
   // ---- duty tab: one grade's list per day
   var DT = { grade: null, day: null };
-  function renderDuty() {
-    if (!DUTY) { document.getElementById("duty-body").innerHTML = '<div class="empty">רשימות התורנות יופיעו אחרי העדכון הבא.</div>'; return; }
-    var dates = Object.keys(DUTY.days).filter(function (d) { return d >= todayISO; }).sort();
-    if (!dates.length) { document.getElementById("duty-body").innerHTML = '<div class="empty">אין רשימות לימים הקרובים.</div>'; return; }
-    if (!DT.day || dates.indexOf(DT.day) < 0) DT.day = dates.indexOf(selected) >= 0 ? selected : dates[0];
-    var grades = ["ט", "י", "יא", "יב", "יג", "יד"].filter(function (g) { return dates.some(function (d) { return DUTY.days[d][g]; }); });
-    if (!DT.grade) {
-      var mineG = {}; dates.forEach(function (d) { dutyOn(d).forEach(function (x) { mineG[x.grade] = (mineG[x.grade] || 0) + 1; }); });
-      DT.grade = Object.keys(mineG).sort(function (a, b) { return mineG[b] - mineG[a]; })[0] || grades[0];
-    }
-    document.getElementById("duty-grades").innerHTML = grades.map(function (g) { return '<button type="button" data-grade="' + g + '" aria-pressed="' + (g === DT.grade) + '">' + g + "'</button>"; }).join("");
-    var mineN = 0; dates.forEach(function (d) { mineN += dutyOn(d).length; });
-    document.getElementById("duty-title").textContent = "תורני חצר · שכבה " + DT.grade + "'";
-    document.getElementById("duty-mine").textContent = mineN ? "לך יש " + mineN + " תורנויות בימים הקרובים" : "";
-    document.getElementById("duty-strip").innerHTML = dates.map(function (d) {
-      var mine = dutyOn(d).length;
-      return '<button type="button" data-date="' + d + '" aria-pressed="' + (d === DT.day) + '"' + (d === todayISO ? ' class="today"' : "") + '><span class="wd">' + esc(new Intl.DateTimeFormat("he-IL", { weekday: "long" }).format(new Date(d + "T12:00:00")).replace("יום ", "")) + '</span><span class="dm">' + dm(d) + '</span><span class="n">' + (mine ? mine + " שלך" : "&nbsp;") + '</span></button>';
-    }).join("");
-    var g = DUTY.days[DT.day][DT.grade];
-    if (!g) { document.getElementById("duty-body").innerHTML = '<div class="empty">לשכבה אין לימודים ביום הזה.</div>'; return; }
-    var rows = g.slots.map(function (sl) {
+  function dutyRows(g, me) {
+    return '<div class="crows">' + g.slots.map(function (sl) {
       var lunch = !!sl.role, t = lunch ? "13:00" : (NH[sl.hour] ? NH[sl.hour][1] : "");
-      var who = sl.people.length ? sl.people.map(function (x) { return '<span' + (x === ME ? ' class="me"' : "") + '>' + esc(x) + '</span>'; }).join("") : '<em>אין מדריך פנוי</em>';
-      return '<details class="crow drow' + (lunch ? " lunch" : "") + '"><summary><span class="hr">' + (lunch ? "הפסקה" : sl.hour) + '</span><span class="tm">' + t + '</span><span class="sb">' + (lunch ? esc(sl.role) : "תורן חצר") + '</span><span class="who">' + who + '</span></summary></details>';
-    }).join("");
-    document.getElementById("duty-body").innerHTML = '<div class="crows">' + rows + '</div><p class="muted" style="margin:0;font-size:.8rem">הרשימה נבנית אוטומטית מהמערכת של כל הצוות: רק מי שפנוי באותה שעה, ובחלוקה שווה. אם מישהו מקבל שיעור, הוא מוחלף לבד בעדכון הבא.</p>';
+      var who = sl.people.length ? sl.people.map(function (x) { return '<span' + (x === me ? ' class="me"' : "") + '>' + esc(x) + '</span>'; }).join("") : '<em>אין מדריך פנוי</em>';
+      return '<details class="crow drow' + (lunch ? " lunch" : "") + '"><summary><span class="hr">' + (lunch ? "" : sl.hour) + '</span><span class="tm">' + t + '</span><span class="sb">' + (lunch ? "הפסקה גדולה · " + esc(sl.role) : "תורן חצר") + '</span><span class="who">' + who + '</span></summary></details>';
+    }).join("") + '</div>';
+  }
+  function renderDuty() {
+    var day = DUTY && DUTY.days[todayISO];
+    document.getElementById("duty-strip").hidden = true;
+    if (!day || !Object.keys(day).length) {
+      document.getElementById("duty-grades").innerHTML = "";
+      document.getElementById("duty-title").textContent = "תורני חצר · היום";
+      document.getElementById("duty-mine").textContent = "";
+      document.getElementById("duty-body").innerHTML = '<div class="empty">אין רשימת תורני חצר להיום. הרשימה נוצרת בעדכון של הבוקר בימי לימודים.</div>';
+      return;
+    }
+    var grades = ["ט", "י", "יא", "יב", "יג", "יד"].filter(function (g) { return day[g]; });
+    var mine = dutyOn(todayISO);
+    if (!DT.grade || !day[DT.grade]) DT.grade = mine.length ? mine[0].grade : grades[0];
+    document.getElementById("duty-grades").innerHTML = grades.map(function (g) { return '<button type="button" data-grade="' + g + '" aria-pressed="' + (g === DT.grade) + '">' + g + "'</button>"; }).join("");
+    document.getElementById("duty-title").textContent = "תורני חצר · שכבה " + DT.grade + "' · היום " + dm(todayISO);
+    document.getElementById("duty-mine").textContent = mine.length ? "לך יש " + mine.length + " תורנויות היום" : "";
+    document.getElementById("duty-body").innerHTML = dutyRows(day[DT.grade], ME) + '<p class="muted" style="margin:0;font-size:.8rem">הרשימה נבנית כל בוקר מהמערכת של כל הצוות: רק מי שפנוי באותה שעה, ובחלוקה שווה. אם מישהו מקבל שיעור, הוא מוחלף לבד בעדכון הבא.</p>';
   }
   document.getElementById("duty-grades").addEventListener("click", function (e) { var b = e.target.closest("button[data-grade]"); if (!b) return; DT.grade = b.getAttribute("data-grade"); renderDuty(); });
   document.getElementById("duty-strip").addEventListener("click", function (e) { var b = e.target.closest("button[data-date]"); if (!b) return; DT.day = b.getAttribute("data-date"); renderDuty(); });
@@ -1057,33 +1055,64 @@ function startApp(DATA, TEAM) {
   function json(url) { return fetch(url + "?t=" + Math.floor(Date.now() / 60000)).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }); }
   var picker = document.getElementById("picker"), app = document.getElementById("app");
   // HQ: everyone's reminders, behind the HQ code kept in the unit's private store
+  var HQH = ["07:25", "08:10", "08:55", "09:55", "10:40", "11:30", "12:15", "13:40", "14:25", "15:15", "16:00"];
   function hqOpen(api) {
-    var box = document.getElementById("hq"), list = document.getElementById("plist");
-    list.hidden = true; document.getElementById("psearch").hidden = true; document.getElementById("hq-go").hidden = true; box.hidden = false;
+    var box = document.getElementById("hq");
+    document.querySelector("#picker header p").hidden = true;
+    document.getElementById("plist").hidden = true; document.getElementById("psearch").hidden = true; document.getElementById("hq-go").hidden = true; box.hidden = false;
+    var today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jerusalem" }).format(new Date());
+    var state = { tab: null, duty: null, rem: null };
+    function draw() {
+      var day = state.duty && state.duty.days[today];
+      var grades = day ? ["ט", "י", "יא", "יב", "יג", "יד"].filter(function (g) { return day[g]; }) : [];
+      var tabs = grades.map(function (g) { return [g, g + "'"]; });
+      if (state.rem) tabs.push(["rem", "תזכורות"]);
+      if (!state.tab || !tabs.some(function (t) { return t[0] === state.tab; })) state.tab = tabs.length ? tabs[0][0] : null;
+      var h = '<h2 style="margin:0">מפקדה</h2><div class="clspick"><div class="g gr">' + tabs.map(function (t) {
+        return '<button type="button" data-hq="' + t[0] + '" aria-pressed="' + (t[0] === state.tab) + '">' + esc(t[1]) + '</button>';
+      }).join("") + '</div></div>';
+      if (state.tab === "rem") h += hqReminders(state.rem);
+      else if (state.tab) {
+        h += '<div class="dayhead"><h2>תורני חצר · שכבה ' + esc(state.tab) + "'</h2></div><div class=\"crows\">" + day[state.tab].slots.map(function (sl) {
+          var lunch = !!sl.role;
+          var who = sl.people.length ? sl.people.map(function (x) { return '<span>' + esc(x) + '</span>'; }).join("") : '<em>אין מדריך פנוי</em>';
+          return '<details class="crow drow' + (lunch ? " lunch" : "") + '"><summary><span class="hr">' + (lunch ? "" : sl.hour) + '</span><span class="tm">' + (lunch ? "13:00" : HQH[sl.hour] || "") + '</span><span class="sb">' + (lunch ? "הפסקה גדולה · " + esc(sl.role) : "תורן חצר") + '</span><span class="who">' + who + '</span></summary></details>';
+        }).join("") + '</div>';
+      } else h += '<div class="empty">אין רשימת תורני חצר להיום.</div>';
+      box.innerHTML = h + '<button type="button" class="hqbtn" id="hq-out">יציאה</button>';
+      box.querySelector(".gr").onclick = function (e) { var b = e.target.closest("button[data-hq]"); if (b) { state.tab = b.getAttribute("data-hq"); draw(); } };
+      document.getElementById("hq-out").onclick = function () { location.reload(); };
+    }
+    function enter(rem) {
+      state.rem = rem;
+      json("data/duty.json").then(function (d) { state.duty = d; draw(); }).catch(function () { draw(); });
+    }
+    if (!api) { enter(null); return; }
     box.innerHTML = '<form class="noteform" id="hq-form" style="border-color:var(--accent)"><label for="hq-code">קוד מפקדה<input type="password" id="hq-code" inputmode="numeric" autocomplete="off"></label>' +
       '<div class="btns"><button type="submit" class="save" style="background:var(--accent);border-color:var(--accent)">כניסה</button><button type="button" id="hq-back">חזרה</button></div><p class="hint" id="hq-err"></p></form>';
     document.getElementById("hq-back").onclick = function () { location.reload(); };
     document.getElementById("hq-form").onsubmit = function (e) {
       e.preventDefault();
-      var code = document.getElementById("hq-code").value.trim();
       document.getElementById("hq-err").textContent = "בודק…";
-      fetch(api, { method: "POST", body: JSON.stringify({ action: "hq", code: code }) }).then(function (r) { return r.json(); }).then(function (r) {
+      fetch(api, { method: "POST", body: JSON.stringify({ action: "hq", code: document.getElementById("hq-code").value.trim() }) }).then(function (r) { return r.json(); }).then(function (r) {
         if (!r.ok) { document.getElementById("hq-err").textContent = "הקוד לא נכון."; return; }
-        var days = [], d = new Date();
-        while (days.length < 5) { if (d.getDay() < 5) days.push(new Date(d)); d.setDate(d.getDate() + 1); }
-        var fmt = new Intl.DateTimeFormat("he-IL", { weekday: "long", day: "numeric", month: "numeric" });
-        box.innerHTML = '<h2 style="margin:0">כל התזכורות ביחידה</h2>' + days.map(function (day) {
-          var iso = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jerusalem" }).format(day);
-          var items = r.reminders.filter(function (x) { return x.date ? x.date === iso : x.dow === day.getDay(); }).sort(function (a, b) { return a.hour - b.hour || String(a.team).localeCompare(String(b.team)); });
-          return '<section class="hqday"><h3>' + esc(fmt.format(day)) + '</h3>' + (items.length ? items.map(function (x) {
-            return '<div class="r"><b>שעה ' + x.hour + '</b><span>' + esc(x.text) + '</span><span class="who">' + esc(x.name) + (x.team ? " · " + esc(x.team) : "") + '</span></div>';
-          }).join("") : '<p class="muted" style="margin:0">אין תזכורות.</p>') + '</section>';
-        }).join("") + '<button type="button" class="hqbtn" onclick="location.reload()">יציאה</button>';
+        enter(r.reminders);
       }).catch(function () { document.getElementById("hq-err").textContent = "אין חיבור. נסו שוב."; });
     };
     document.getElementById("hq-code").focus();
   }
-
+  function hqReminders(all) {
+    var days = [], d = new Date();
+    while (days.length < 5) { if (d.getDay() < 5) days.push(new Date(d)); d.setDate(d.getDate() + 1); }
+    var fmt = new Intl.DateTimeFormat("he-IL", { weekday: "long", day: "numeric", month: "numeric" });
+    return days.map(function (day) {
+      var iso = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jerusalem" }).format(day);
+      var items = all.filter(function (x) { return x.date ? x.date === iso : x.dow === day.getDay(); }).sort(function (a, b) { return a.hour - b.hour || String(a.team).localeCompare(String(b.team)); });
+      return '<section class="hqday"><h3>' + esc(fmt.format(day)) + '</h3>' + (items.length ? items.map(function (x) {
+        return '<div class="r"><b>שעה ' + x.hour + '</b><span>' + esc(x.text) + '</span><span class="who">' + esc(x.name) + (x.team ? " · " + esc(x.team) : "") + '</span></div>';
+      }).join("") : '<p class="muted" style="margin:0">אין תזכורות.</p>') + '</section>';
+    }).join("");
+  }
   function showPicker() {
     app.hidden = true; picker.hidden = false;
     var list = document.getElementById("plist");
@@ -1126,7 +1155,7 @@ function startApp(DATA, TEAM) {
       }
       draw("");
       document.getElementById("psearch").oninput = function (e) { draw(e.target.value.trim()); };
-      if (d.api) { var hb = document.getElementById("hq-go"); hb.hidden = false; hb.onclick = function () { hqOpen(d.api); }; }
+      var hb = document.getElementById("hq-go"); hb.hidden = false; hb.onclick = function () { hqOpen(d.api || ""); };
       list.onclick = function (e) {
         var b = e.target.closest("button[data-id]"); if (!b) return;
         set("me", b.getAttribute("data-id")); location.reload();
