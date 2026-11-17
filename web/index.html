@@ -664,10 +664,16 @@ function startApp(DATA, TEAM) {
       .concat(dutyOn(selected).map(function (d) { return { h: d.hour + 0.2, html: dutyCard(d) }; }))
       .sort(function (a, b) { return a.h - b.h; });
     document.getElementById("daylist").innerHTML = (items.length ? items.map(function (i) { return i.html; }).join("") : '<div class="empty">אין לך שיעורים ביום הזה.</div>') +
-      (HQ ? "" : '<div id="noteslot"><button type="button" class="addnote" id="addnote">＋ תזכורת אישית ליום הזה</button></div>');
+      (HQ || (API && otherOwner()) ? "" : '<div id="noteslot"><button type="button" class="addnote" id="addnote">＋ תזכורת אישית ליום הזה</button></div>');
   }
   // Reminders kept in the unit's private store (Apps Script), when the site has its address.
-  var API = DATA.api || "", CODE_KEY = "code-" + ME, HQ = DATA.hq || null, HQALL = [];
+  var API = DATA.api || "", HQ = DATA.hq || null, HQALL = [];
+  // Each phone is linked to one person; that link (a device key from the engine) is what unlocks
+  // the person's reminders and notifications. No code to remember.
+  var DEV_KEY = "dev-" + ME, OWNER_KEY = "dev-owner";
+  function myToken() { return store(DEV_KEY) || ""; }
+  function owner() { return store(OWNER_KEY) || ""; }
+  function otherOwner() { return owner() && owner() !== ME; }
   if (HQ) {
     notes = [];
     var hqb = document.createElement("div");
@@ -676,9 +682,10 @@ function startApp(DATA, TEAM) {
     document.querySelector("#app header").appendChild(hqb);
     document.getElementById("hq-list").onclick = function () { try { localStorage.removeItem("me"); } catch (e) {} location.reload(); };
     document.getElementById("hq-out").onclick = function () { try { localStorage.removeItem("me"); localStorage.removeItem("hq"); } catch (e) {} location.reload(); };
+  } else if (API && otherOwner()) {
+    notes = [];  // someone else's page on a linked phone: no reminders here
   }
   function call(o) { return fetch(API, { method: "POST", body: JSON.stringify(o) }).then(function (r) { return r.json(); }); }
-  function myCode() { return store(CODE_KEY) || ""; }
   function fromServer(list) {
     return list.map(function (x) { var n = { id: x.id, hour: x.hour, text: x.text }; if (x.date) n.date = x.date; else n.dow = x.dow; return n; });
   }
@@ -692,42 +699,37 @@ function startApp(DATA, TEAM) {
         if (!document.getElementById("view-team").hidden) renderTeam();
       }).catch(function () {});
     }
-    if (!API || !myCode()) return Promise.resolve();
-    return call({ action: "list", name: ME, code: myCode() }).then(function (r) {
+    if (!API || !myToken()) return Promise.resolve();
+    return call({ action: "list", name: ME, token: myToken() }).then(function (r) {
       if (r.ok) { notes = fromServer(r.reminders); saveNotes(); renderDay(); if (!document.getElementById("view-week").hidden) renderWeek(); }
-      else if (r.error === "wrong code") store(CODE_KEY, "");
+      else if (r.error === "not this phone") { store(DEV_KEY, ""); if (owner() === ME) store(OWNER_KEY, ""); }
     }).catch(function () {});
   }
-  function loginForm(slot, done) {
-    slot.innerHTML = '<div class="noteform"><p class="hint" style="font-size:.9rem;color:var(--ink)">בודק…</p></div>';
-    call({ action: "status", name: ME }).then(function (r) {
-      if (!r.ok) { slot.innerHTML = '<div class="empty">השם שלך לא נמצא ברשימת אנשי הצוות. פנו למנהל המערכת.</div>'; return; }
-      var fresh = !r.hasCode;
-      slot.innerHTML = '<form class="noteform" data-login="1">' +
-        '<label for="c-code">' + (fresh ? "בחרו קוד אישי (4 עד 8 ספרות). בעזרתו תיכנסו מכל טלפון או מחשב." : "הקוד האישי שלכם") +
-        '<input type="password" id="c-code" inputmode="numeric" autocomplete="off" maxlength="8"></label>' +
-        '<div class="btns"><button type="submit" class="save">' + (fresh ? "שמירת הקוד" : "כניסה") + '</button><button type="button" id="n-cancel">ביטול</button></div>' +
-        '<p class="hint" id="c-err">' + (fresh ? "שכחתם? מנהל המערכת יכול לשלוח לכם את הקוד." : "") + '</p></form>';
-      var f = slot.querySelector("form");
-      f.querySelector("#c-code").focus();
-      f.addEventListener("submit", function (e) {
-        e.preventDefault(); e.stopPropagation();
-        var code = f.querySelector("#c-code").value.trim(), err = f.querySelector("#c-err");
-        if (!/^\d{4,8}$/.test(code)) { err.textContent = "הקוד צריך להיות 4 עד 8 ספרות."; return; }
-        err.textContent = "בודק…";
-        (fresh ? call({ action: "setCode", name: ME, code: code }) : Promise.resolve({ ok: true })).then(function () {
-          return call({ action: "list", name: ME, code: code });
-        }).then(function (r) {
-          if (!r.ok) { err.textContent = "הקוד לא נכון. נסו שוב."; return; }
-          store(CODE_KEY, code);
-          // reminders written on this phone before the login move to the unit's store
-          var local = notes.slice();
-          return local.reduce(function (pr, n) {
-            return pr.then(function () { return call({ action: "add", name: ME, code: code, reminder: n }); });
-          }, Promise.resolve()).then(syncNotes).then(done);
-        }).catch(function () { err.textContent = "אין חיבור. נסו שוב בעוד רגע."; });
-      });
-    }).catch(function () { slot.innerHTML = '<div class="empty">אין חיבור למערכת התזכורות. נסו שוב בעוד רגע.</div>'; });
+  // Link this phone to this person, after they confirm the page is theirs.
+  function bindFlow(slot, done) {
+    if (otherOwner()) {
+      slot.innerHTML = '<div class="empty">הטלפון הזה מקושר למערכת של ' + esc(owner()) + '. תזכורות והתראות זמינות רק במערכת שלך.</div>';
+      return;
+    }
+    slot.innerHTML = '<div class="noteform" data-login="1"><p style="margin:0;font-weight:600">זו המערכת שלך, ' + esc(ME) + '?</p>' +
+      '<p class="hint" style="font-size:.85rem">הטלפון הזה יקושר למערכת שלך. מעכשיו רק ממנו אפשר יהיה לראות את התזכורות שלך ולקבל התראות.</p>' +
+      '<div class="btns"><button type="button" class="save" id="b-yes">כן, זו המערכת שלי</button><button type="button" id="n-cancel">ביטול</button></div><p class="hint" id="b-err"></p></div>';
+    slot.querySelector("#b-yes").onclick = function () {
+      var err = slot.querySelector("#b-err"); err.textContent = "מקשר…";
+      call({ action: "bind", name: ME }).then(function (r) {
+        if (!r.ok) {
+          err.textContent = r.error === "bound elsewhere" ? "המערכת הזו כבר מקושרת לטלפון אחר. החלפת טלפון? בקשו ממנהל המערכת לאפס את הקישור." :
+            r.error === "unknown name" ? "השם לא נמצא ברשימת אנשי הצוות. פנו למנהל המערכת." : "לא הצלחתי לקשר. נסו שוב בעוד רגע.";
+          return;
+        }
+        store(DEV_KEY, r.token); store(OWNER_KEY, ME);
+        // reminders written on this phone before the link move to the unit's store
+        return notes.slice().reduce(function (pr, n) {
+          return pr.then(function () { return call({ action: "add", name: ME, token: r.token, reminder: n }); });
+        }, Promise.resolve()).then(syncNotes).then(done);
+      }).catch(function () { err.textContent = "אין חיבור. נסו שוב בעוד רגע."; });
+    };
+    slot.querySelector("#n-cancel").onclick = function () { if (slot.id === "noteslot") renderDay(); else pushSetup(); };
   }
   // ---- pop-up notifications (Web Push); the hourly update sends them
   function b64key(s) {
@@ -736,33 +738,40 @@ function startApp(DATA, TEAM) {
   }
   function pushSetup() {
     var box = document.getElementById("pushbox");
-    if (!box || HQ || !API || !DATA.vapid || !("serviceWorker" in navigator)) return;
+    if (!box || HQ || !API) return;
+    if (otherOwner()) { box.innerHTML = '<p class="pushhint">🔗 הטלפון הזה מקושר למערכת של ' + esc(owner()) + '.</p>'; return; }
     var ios = /iPhone|iPad|iPod/.test(navigator.userAgent), standalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone;
-    if (!("PushManager" in window)) {
-      if (ios && !standalone) box.innerHTML = '<p class="pushhint">🔔 כדי לקבל התראות באייפון: כפתור השיתוף ⬆️ ← "הוספה למסך הבית", ואז לפתוח את האתר מהאייקון.</p>';
+    var canPush = DATA.vapid && "serviceWorker" in navigator && "PushManager" in window;
+    if (!canPush) {
+      box.innerHTML = (myToken() ? '<span class="pushon">🔗 הטלפון מקושר למערכת שלך</span>' : '<button type="button" class="pushbtn" id="linkgo">🔗 קישור הטלפון למערכת שלי</button>') +
+        (ios && !standalone ? '<p class="pushhint">🔔 כדי לקבל התראות באייפון: כפתור השיתוף ⬆️ ← "הוספה למסך הבית", ואז לפתוח את האתר מהאייקון.</p>' : "");
+      var lg = document.getElementById("linkgo"); if (lg) lg.onclick = function () { bindFlow(box, pushSetup); };
       return;
     }
     navigator.serviceWorker.register("sw.js").then(function (reg) {
       return reg.pushManager.getSubscription().then(function (sub) {
-        if (sub && store("push-on") === ME) { box.innerHTML = '<span class="pushon">🔔 ההתראות פעילות בטלפון הזה</span>'; return; }
-        box.innerHTML = '<button type="button" class="pushbtn" id="pushgo">🔔 הפעלת התראות לטלפון</button><p class="pushhint">סיכום בוקר, שינויים של היום, ותזכורות ותורנויות לפני שהן מתחילות.</p>';
+        if (sub && myToken() && store("push-on") === ME) { box.innerHTML = '<span class="pushon">🔔 ההתראות פעילות והטלפון מקושר למערכת שלך</span>'; return; }
+        box.innerHTML = '<button type="button" class="pushbtn" id="pushgo">🔔 הפעלת התראות וקישור הטלפון</button><p class="pushhint">צעד ראשון חובה: מקשר את הטלפון למערכת שלך. מקבלים סיכום בוקר, שינויים של היום, ותזכורות ותורנויות לפני שהן מתחילות.</p>';
         document.getElementById("pushgo").onclick = function () {
-          if (!myCode()) { loginForm(box, pushSetup); return; }
-          Notification.requestPermission().then(function (perm) {
-            if (perm !== "granted") { box.innerHTML = '<p class="pushhint">ההתראות חסומות. אפשר להפעיל אותן בהגדרות הטלפון, תחת האתר הזה.</p>'; return; }
-            return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64key(DATA.vapid) }).then(function (s2) {
-              return call({ action: "subscribe", name: ME, code: myCode(), sub: s2.toJSON() });
-            }).then(function (r) {
-              if (r && r.ok) { store("push-on", ME); pushSetup(); }
-              else box.innerHTML = '<p class="pushhint">לא הצלחתי להפעיל. נסו שוב בעוד רגע.</p>';
-            });
-          }).catch(function () { box.innerHTML = '<p class="pushhint">לא הצלחתי להפעיל. נסו שוב בעוד רגע.</p>'; });
+          if (!myToken()) { bindFlow(box, function () { document.getElementById("pushgo") ? null : pushSetup(); subscribe(reg, box); }); return; }
+          subscribe(reg, box);
         };
       });
     }).catch(function () {});
   }
+  function subscribe(reg, box) {
+    Notification.requestPermission().then(function (perm) {
+      if (perm !== "granted") { box.innerHTML = '<span class="pushon">🔗 הטלפון מקושר למערכת שלך</span><p class="pushhint">ההתראות חסומות. אפשר להפעיל אותן בהגדרות הטלפון, תחת האתר הזה, ואז ללחוץ כאן שוב.</p>'; return; }
+      return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64key(DATA.vapid) }).then(function (s2) {
+        return call({ action: "subscribe", name: ME, token: myToken(), sub: s2.toJSON() });
+      }).then(function (r) {
+        if (r && r.ok) { store("push-on", ME); pushSetup(); }
+        else box.innerHTML = '<p class="pushhint">לא הצלחתי להפעיל. נסו שוב בעוד רגע.</p>';
+      });
+    }).catch(function () { box.innerHTML = '<p class="pushhint">לא הצלחתי להפעיל. נסו שוב בעוד רגע.</p>'; });
+  }
   function openNoteForm() {
-    if (API && !myCode()) { loginForm(document.getElementById("noteslot"), openNoteForm); return; }
+    if (API && !HQ && !myToken()) { bindFlow(document.getElementById("noteslot"), openNoteForm); return; }
     var d = dayMap[selected];
     document.getElementById("noteslot").innerHTML = '<form class="noteform" id="noteform">' +
       '<label for="n-hour">שעה<select id="n-hour">' + NH.map(function (h) { return '<option value="' + h[0] + '">שעה ' + h[0] + ' · ' + h[1] + ' עד ' + h[2] + '</option>'; }).join("") + '</select></label>' +
@@ -778,7 +787,7 @@ function startApp(DATA, TEAM) {
     var del = e.target.closest("button[data-del]");
     if (del) {
       var id = del.getAttribute("data-del"); notes = notes.filter(function (n) { return n.id !== id; }); saveNotes(); renderDay();
-      if (API && myCode()) call({ action: "delete", name: ME, code: myCode(), id: id }).then(syncNotes).catch(function () {});
+      if (API && myToken()) call({ action: "delete", name: ME, token: myToken(), id: id }).then(syncNotes).catch(function () {});
     }
   });
   document.getElementById("daylist").addEventListener("submit", function (e) {
@@ -788,7 +797,7 @@ function startApp(DATA, TEAM) {
     var n = { id: String(Date.now()), hour: +document.getElementById("n-hour").value, text: text };
     if (document.getElementById("n-weekly").checked) n.dow = dow(selected); else n.date = selected;
     notes.push(n); saveNotes(); renderDay();
-    if (API && myCode()) call({ action: "add", name: ME, code: myCode(), reminder: n }).then(syncNotes).catch(function () {});
+    if (API && myToken()) call({ action: "add", name: ME, token: myToken(), reminder: n }).then(syncNotes).catch(function () {});
   });
   document.getElementById("strip").addEventListener("click", function (e) {
     var b = e.target.closest("button[data-date]"); if (!b) return;
@@ -913,13 +922,13 @@ function startApp(DATA, TEAM) {
       }).join("") + '</table>' : '<p class="muted" style="margin:0">אין תזכורות ביום הזה.</p>') + '</div>';
       return;
     }
-    if (!myCode()) {
-      box.innerHTML = '<div class="ends"><h3>תזכורות הצוות</h3><p class="muted" style="margin:0">כדי לראות את התזכורות של הצוות, היכנסו עם הקוד האישי.</p><div id="tn-login"><button type="button" class="addnote" id="tn-go">כניסה עם קוד אישי</button></div></div>';
-      document.getElementById("tn-go").onclick = function () { loginForm(document.getElementById("tn-login"), function () { renderTeam(); }); };
+    if (!myToken()) {
+      box.innerHTML = '<div class="ends"><h3>תזכורות הצוות</h3><p class="muted" style="margin:0">כדי לראות את התזכורות של הצוות, קשרו את הטלפון למערכת שלכם.</p><div id="tn-login"><button type="button" class="addnote" id="tn-go">🔗 קישור הטלפון</button></div></div>';
+      document.getElementById("tn-go").onclick = function () { bindFlow(document.getElementById("tn-login"), function () { renderTeam(); }); };
       return;
     }
     box.innerHTML = '<div class="ends"><h3>תזכורות הצוות</h3><p class="muted" style="margin:0">טוען…</p></div>';
-    call({ action: "team", name: ME, code: myCode() }).then(function (r) {
+    call({ action: "team", name: ME, token: myToken() }).then(function (r) {
       if (!r.ok) { box.innerHTML = ""; return; }
       var list = r.reminders.filter(function (x) { return x.date ? x.date === teamDay : x.dow === dow(teamDay); }).sort(function (a, b) { return a.hour - b.hour; });
       box.innerHTML = '<div class="ends"><h3>תזכורות הצוות · ' + dm(teamDay) + '</h3>' + (list.length ? '<table>' + list.map(function (x) {

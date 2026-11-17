@@ -38,19 +38,23 @@ function handle(req) {
   var staff = staffList();
   var me = staff.filter(function (p) { return p.name === name; })[0];
   if (!me) return { ok: false, error: 'unknown name' };
-  var codes = sheet('קודים');
-  var row = findRow(codes, 1, name);
-  if (a === 'status') return { ok: true, hasCode: row > 0 };
-  if (a === 'setCode') {
-    if (row > 0) return { ok: false, error: 'code exists' };
-    var code = String(req.code || '').trim();
-    if (!/^\d{4,8}$/.test(code)) return { ok: false, error: 'code must be 4-8 digits' };
-    codes.appendRow([name, "'" + code, new Date()]);
-    return { ok: true };
+  // Each person is linked to one phone: the first phone that links gets a device key, and only that
+  // key opens the person's reminders. To move someone to a new phone, delete their row in "מכשירים".
+  var dev = ensureSheet('מכשירים', ['שם', 'מפתח מכשיר', 'קושר']);
+  var row = findRow(dev, 1, name);
+  if (a === 'status') return { ok: true, bound: row > 0 };
+  if (a === 'bind') {
+    if (row > 0) {
+      if (req.token && String(dev.getRange(row, 2).getValue()) === String(req.token)) return { ok: true, token: req.token };
+      return { ok: false, error: 'bound elsewhere' };
+    }
+    var token = Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '');
+    dev.appendRow([name, token, new Date()]);
+    return { ok: true, token: token };
   }
-  if (row < 1 || String(codes.getRange(row, 2).getValue()) !== String(req.code || '').trim()) {
+  if (row < 1 || String(dev.getRange(row, 2).getValue()) !== String(req.token || '')) {
     Utilities.sleep(800);
-    return { ok: false, error: 'wrong code' };
+    return { ok: false, error: 'not this phone' };
   }
   var rem = sheet('תזכורות');
   if (a === 'list') return { ok: true, reminders: reminders(rem, function (r) { return r.name === name; }) };
@@ -136,7 +140,7 @@ function store() {
   var id = props.getProperty('STORE_ID');
   if (id) return SpreadsheetApp.openById(id);
   var ss = SpreadsheetApp.create('המערכת האישית — קודים ותזכורות (פרטי)');
-  ss.getSheets()[0].setName('קודים').appendRow(['שם', 'קוד', 'נוצר']);
+  ss.getSheets()[0].setName('מכשירים').appendRow(['שם', 'מפתח מכשיר', 'קושר']);
   ss.insertSheet('תזכורות').appendRow(['מזהה', 'שם', 'צוות', 'תאריך', 'יום בשבוע', 'שעה', 'תזכורת', 'נוצר']);
   ss.insertSheet('הגדרות').appendRow(['קוד אנשי מנהלה', '']);
   ss.getSheetByName('הגדרות').appendRow(['מפתח התראות', Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '')]);
@@ -147,6 +151,12 @@ function store() {
 }
 
 function sheet(name) { return store().getSheetByName(name); }
+
+function ensureSheet(name, head) {
+  var ss = store(), tab = ss.getSheetByName(name);
+  if (!tab) { tab = ss.insertSheet(name); tab.appendRow(head); }
+  return tab;
+}
 
 function setting(key) {
   var rows = sheet('הגדרות').getDataRange().getValues();
