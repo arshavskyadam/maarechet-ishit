@@ -9,6 +9,7 @@ What is sent, per person, at most once each (a hashed log in docs/data/push_log.
   - 07:00–07:59: a morning summary of the day (lessons, yard duty, reminders)
   - any run: changes found in this run that land on today
   - any run after the morning: reminders and yard duty that start within the next hour
+  - to team leads and commanders, once a month: the yard-duty report (see report_month)
 """
 
 import hashlib
@@ -95,11 +96,49 @@ def commander_messages(team, all_reminders, duty, ids, today, dow, morning):
     return out
 
 
+MONTHS = ["ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני", "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר"]
+
+
+def report_month(now, duty_today):
+    """The month whose yard-duty report goes out now, or None: at the last update of the month's last
+    school day (from 14:00), or, if that was missed, in the first week of the next month."""
+    d = now.date()
+    if duty_today and now.hour >= 14:
+        nxt = d + timedelta(days=1)
+        while nxt.month == d.month and nxt.weekday() not in (6, 0, 1, 2, 3):
+            nxt += timedelta(days=1)
+        if nxt.month != d.month:
+            return d.isoformat()[:7]
+    if d.day <= 7:
+        return (d.replace(day=1) - timedelta(days=1)).isoformat()[:7]
+    return None
+
+
+def report_message(reports, month, team):
+    t = reports.get("months", {}).get(month, {}).get("teams", {}).get(team)
+    if not t or not t["people"]:
+        return []
+    people = sorted(t["people"].items(), key=lambda kv: -kv[1]["total"])
+    total = sum(p["total"] for _, p in people)
+    if not total:
+        return []
+    avg = total / len(people)
+    hi, lo = people[0][1]["total"], people[-1][1]["total"]
+    most = ", ".join(f"{short(n)} {p['total']}" for n, p in people if p["total"] == hi)
+    least = ", ".join(f"{short(n)} {p['total']}" for n, p in people if p["total"] == lo)
+    name = MONTHS[int(month[5:]) - 1]
+    body = f"{total} תורנויות · ממוצע {avg:.0f} · פער מקסימלי {hi - lo}\nהכי הרבה: {most} · הכי מעט: {least}\nהדוח המלא באתר, בלשונית תורני חצר"
+    return [(f"report|{month}", f"📊 {team} · דוח תורנויות {name}", body)]
+
+
 def send_all(webpush, WebPushException, sub, name, messages, log, today, key):
     """Send each message once; returns (sent, gone) where gone means the phone turned notifications off."""
     sent = 0
     for tag, title, body in messages:
-        k = hashlib.sha1(f"{name}|{today}|{tag}".encode("utf-8")).hexdigest()[:16]
+        if tag.startswith("report|"):  # once per month, not once per day
+            k = "r:" + hashlib.sha1(f"{name}|{tag}".encode("utf-8")).hexdigest()[:16]
+        else:
+            k = hashlib.sha1(f"{name}|{today}|{tag}".encode("utf-8")).hexdigest()[:16]
         if k in log:
             continue
         try:
@@ -133,17 +172,23 @@ def main():
     duty = load_json(DOCS / "data" / "duty.json", {}).get("days", {}).get(today, {})
     log_path = DOCS / "data" / "push_log.json"
     log = load_json(log_path, {})
-    log = {k: v for k, v in log.items() if v >= (now.date() - timedelta(days=3)).isoformat()}
+    log = {k: v for k, v in log.items() if v >= (now.date() - timedelta(days=40 if k.startswith("r:") else 3)).isoformat()}
     morning = now.hour == 7
     window = (now.hour * 60 + now.minute, now.hour * 60 + now.minute + 60)
     sent = dropped = 0
 
     teams = {t["name"]: t for t in staff.get("teams", [])}
+    reports = load_json(DOCS / "data" / "duty_reports.json", {})
+    rmonth = report_month(now, bool(duty))
+    names = {p["id"]: p["name"] for p in staff.get("people", [])}
+    lead_of = {names.get(t["lead"]): t["name"] for t in staff.get("teams", [])}
     for entry in feed["subs"]:
         name, sub = entry["name"], entry["sub"]
         if name.startswith("מפקד:"):
             team = teams.get(name.split(":", 1)[1])
             messages = commander_messages(team, feed["reminders"], duty, ids, today, dow, morning) if team else []
+            if team and rmonth:
+                messages += report_message(reports, rmonth, team["name"])
             ok, gone = send_all(webpush, WebPushException, sub, name, messages, log, today, key)
             sent += ok
             if gone:
@@ -186,22 +231,13 @@ def main():
             if c.get("date") == today and c.get("detected_at") == latest.get("scraped_at"):
                 messages.append((f"chg|{c.get('kind')}|{c.get('text')}", "⚠️ שינוי במערכת להיום", f"{c.get('kind')}: {fill(c.get('text', ''))}"))
 
-        for tag, title, body in messages:
-            k = hashlib.sha1(f"{name}|{today}|{tag}".encode("utf-8")).hexdigest()[:16]
-            if k in log:
-                continue
-            try:
-                webpush(subscription_info=sub, data=json.dumps({"title": title, "body": body, "tag": tag[:40], "url": CONFIG.get("site_url", "./")}, ensure_ascii=False),
-                        vapid_private_key=key, vapid_claims={"sub": CONFIG.get("site_url") or "https://github.com"}, ttl=3600)
-                log[k] = today
-                sent += 1
-            except WebPushException as e:
-                code = getattr(e.response, "status_code", None)
-                if code in (404, 410):  # the phone turned notifications off
-                    api({"action": "push_drop", "token": token, "endpoint": sub.get("endpoint", "")})
-                    dropped += 1
-                    break
-                print(f"notifications: one failed ({code})")
+        if rmonth and name in lead_of:
+            messages += report_message(reports, rmonth, lead_of[name])
+        ok, gone = send_all(webpush, WebPushException, sub, name, messages, log, today, key)
+        sent += ok
+        if gone:  # the phone turned notifications off
+            api({"action": "push_drop", "token": token, "endpoint": sub.get("endpoint", "")})
+            dropped += 1
     write_json(log_path, log)
     print(f"notifications: {sent} sent to {len(feed['subs'])} phones, {dropped} removed")
 

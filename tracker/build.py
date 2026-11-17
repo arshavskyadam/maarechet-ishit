@@ -288,12 +288,24 @@ def build_duty(raw, now, people, team_defs):
         for name, cell in entries:
             if cell["lessons"]:
                 grade_hours.setdefault((date, grade_of(name)), set()).add(hour)
-    count = {}
+    # The fairness table: every duty since the start of this month counts, not only today's.
+    hist_path = DOCS / "data" / "duty_history.json"
+    hist = load_json(hist_path, {}).get("days", {})
+    month = today[:7]
+    count, last = {}, {}
+    for d, day in hist.items():
+        if d[:7] == month and d < today:
+            for g in day.values():
+                for s in g["slots"]:
+                    for c in s["people"]:
+                        count[c] = count.get(c, 0) + 1
+                        last[c] = max(last.get(c, ""), d)
     days = {}
 
     def pick(cands, date, key, taken):
+        # fewest duties this month first, then whoever had one longest ago
         free = [c for c in cands if c not in taken]
-        free.sort(key=lambda c: (count.get(c, 0), hashlib.sha1(f"{c}|{date}|{key}".encode()).hexdigest()))
+        free.sort(key=lambda c: (count.get(c, 0), last.get(c, ""), hashlib.sha1(f"{c}|{date}|{key}".encode()).hexdigest()))
         return free[0] if free else None
 
     for date in dates:
@@ -312,6 +324,7 @@ def build_duty(raw, now, people, team_defs):
                 if any(h >= 7 for h in hours):
                     wanted.append((6.5, LUNCH_ROLES[0]))
                     wanted.append((6.5, LUNCH_ROLES[1]))
+                free_hours = {m: sum(1 for h, r in wanted if not r and (date, h) not in busy.get(m, set())) for m in members}
                 for h, role in wanted:
                     taken = taken_at.setdefault(h, set())
                     if role:
@@ -323,14 +336,55 @@ def build_duty(raw, now, people, team_defs):
                     for c in chosen:
                         taken.add(c)
                         count[c] = count.get(c, 0) + 1
+                        last[c] = date
                     slot = {"hour": h, "people": chosen}
                     if role:
                         slot["role"] = role
                     slots.append(slot)
-                day_out[grade] = {"team": team, "slots": sorted(slots, key=lambda x: x["hour"])}
+                day_out[grade] = {"team": team, "slots": sorted(slots, key=lambda x: x["hour"]),
+                                  "hours": sum(1 for h, r in wanted if not r), "free": free_hours}
         days[date] = day_out
-    write_json(path, {"updated": now.isoformat(timespec="minutes"), "lunch_roles": LUNCH_ROLES, "days": days})
+    write_json(path, {"updated": now.isoformat(timespec="minutes"), "lunch_roles": LUNCH_ROLES,
+                      "days": {d: {g: {"team": v["team"], "slots": v["slots"]} for g, v in day.items()} for d, day in days.items()}})
+    # Keep about two months of days; the monthly reports below are kept for good.
+    hist.update(days)
+    keep_from = (now.date().replace(day=1) - timedelta(days=1)).replace(day=1).isoformat()
+    hist = {d: v for d, v in sorted(hist.items()) if d >= keep_from}
+    write_json(hist_path, {"updated": now.isoformat(timespec="minutes"), "days": hist})
+    build_duty_reports(hist, team_defs, known, now)
     print(f"duty lists for {len(dates)} days")
+
+
+def build_duty_reports(hist, team_defs, known, now):
+    """How many yard duties each instructor did, per team and month (data/duty_reports.json)."""
+    path = DOCS / "data" / "duty_reports.json"
+    months = load_json(path, {}).get("months", {})
+    fresh = {}
+    for d, day in sorted(hist.items()):
+        m = d[:7]
+        for grade, g in day.items():
+            team = fresh.setdefault(m, {}).setdefault(g["team"], {"days": set(), "people": {}})
+            team["days"].add(d)
+            people = team["people"]
+            for name in [x for x in team_defs.get(g["team"], {}).get("members", []) if x in known]:
+                people.setdefault(name, {"total": 0, "hours": 0, "lunch": {r: 0 for r in LUNCH_ROLES}, "free": 0, "possible": 0})
+            for name, n in (g.get("free") or {}).items():
+                if name in people:
+                    people[name]["free"] += n
+                    people[name]["possible"] += g.get("hours", 0)
+            for s in g["slots"]:
+                for name in s["people"]:
+                    p = people.setdefault(name, {"total": 0, "hours": 0, "lunch": {r: 0 for r in LUNCH_ROLES}, "free": 0, "possible": 0})
+                    p["total"] += 1
+                    if s.get("role"):
+                        p["lunch"][s["role"]] = p["lunch"].get(s["role"], 0) + 1
+                    else:
+                        p["hours"] += 1
+    for m, teams in fresh.items():
+        months[m] = {"teams": {t: {"days": len(v["days"]), "people": v["people"]} for t, v in teams.items()}}
+    write_json(path, {"updated": now.isoformat(timespec="minutes"), "lunch_roles": LUNCH_ROLES,
+                      "months": dict(sorted(months.items(), reverse=True))})
+
 
 def class_id(class_name):
     return hashlib.sha1(class_name.encode("utf-8")).hexdigest()[:8]
