@@ -3,6 +3,7 @@
  "source": "https://techni.shahaf.site/",
  "roles": [],
  "api": "",
+ "vapid": "BLSTofBDFtc8bRRBjrCo_C61kNXjEdxhLuyhqst7m2PiI4DohFMBiu7J4vMGBFbc0ht9vtwkHGybcxcTCpPrxCI",
  "ends_title": "שעת סיום · הכיתה שלי",
  "summary_sent": "",
  "latest": {
@@ -567,7 +568,7 @@
     }
    }
   },
-  "scraped_at": "2026-11-17T17:23+02:00",
+  "scraped_at": "2026-11-17T17:26+02:00",
   "class_end": {
    "2026-11-15": [
     {
@@ -3889,7 +3890,7 @@
    "date": "2026-11-15",
    "weekday": "יום ראשון",
    "holidays": [],
-   "recorded_at": "2026-11-17T17:23+02:00",
+   "recorded_at": "2026-11-17T17:26+02:00",
    "lessons": [
     {
      "date": "2026-11-15",
@@ -4190,7 +4191,7 @@
    "holidays": [
     "יום הזיכרון לדוד בן גוריון"
    ],
-   "recorded_at": "2026-11-17T17:23+02:00",
+   "recorded_at": "2026-11-17T17:26+02:00",
    "lessons": [
     {
      "date": "2026-11-16",
@@ -4358,7 +4359,7 @@
    "date": "2026-11-17",
    "weekday": "יום שלישי",
    "holidays": [],
-   "recorded_at": "2026-11-17T17:23+02:00",
+   "recorded_at": "2026-11-17T17:26+02:00",
    "lessons": [
     {
      "date": "2026-11-17",
@@ -4405,7 +4406,7 @@
    "date": "2026-11-18",
    "weekday": "יום רביעי",
    "holidays": [],
-   "recorded_at": "2026-11-17T17:23+02:00",
+   "recorded_at": "2026-11-17T17:26+02:00",
    "lessons": [
     {
      "date": "2026-11-18",
@@ -4549,7 +4550,7 @@
    "date": "2026-11-19",
    "weekday": "יום חמישי",
    "holidays": [],
-   "recorded_at": "2026-11-17T17:23+02:00",
+   "recorded_at": "2026-11-17T17:26+02:00",
    "lessons": [
     {
      "date": "2026-11-19",
@@ -4637,14 +4638,14 @@
    "date": "2026-11-20",
    "weekday": "יום שישי",
    "holidays": [],
-   "recorded_at": "2026-11-17T17:23+02:00",
+   "recorded_at": "2026-11-17T17:26+02:00",
    "lessons": []
   },
   {
    "date": "2026-11-22",
    "weekday": "יום ראשון",
    "holidays": [],
-   "recorded_at": "2026-11-17T17:23+02:00",
+   "recorded_at": "2026-11-17T17:26+02:00",
    "lessons": [
     {
      "date": "2026-11-22",
@@ -4691,7 +4692,7 @@
    "date": "2026-11-23",
    "weekday": "יום שני",
    "holidays": [],
-   "recorded_at": "2026-11-17T17:23+02:00",
+   "recorded_at": "2026-11-17T17:26+02:00",
    "lessons": [
     {
      "date": "2026-11-23",
@@ -4859,7 +4860,7 @@
    "date": "2026-11-24",
    "weekday": "יום שלישי",
    "holidays": [],
-   "recorded_at": "2026-11-17T17:23+02:00",
+   "recorded_at": "2026-11-17T17:26+02:00",
    "lessons": [
     {
      "date": "2026-11-24",
@@ -4899,7 +4900,7 @@
    "date": "2026-11-25",
    "weekday": "יום רביעי",
    "holidays": [],
-   "recorded_at": "2026-11-17T17:23+02:00",
+   "recorded_at": "2026-11-17T17:26+02:00",
    "lessons": [
     {
      "date": "2026-11-25",
@@ -5069,7 +5070,7 @@
    "date": "2026-11-26",
    "weekday": "יום חמישי",
    "holidays": [],
-   "recorded_at": "2026-11-17T17:23+02:00",
+   "recorded_at": "2026-11-17T17:26+02:00",
    "lessons": [
     {
      "date": "2026-11-26",
@@ -5157,7 +5158,7 @@
    "date": "2026-11-27",
    "weekday": "יום שישי",
    "holidays": [],
-   "recorded_at": "2026-11-17T17:23+02:00",
+   "recorded_at": "2026-11-17T17:26+02:00",
    "lessons": []
   }
  ]
