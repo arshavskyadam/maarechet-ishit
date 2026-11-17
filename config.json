@@ -13,5 +13,6 @@
  },
  "fallback_sheet_id": "1DNNu8bpesVCmtOHRBTPOe1NGYYNGYYed8CXC_HG9iDQ",
  "teams_tab": "צוותים",
- "vapid_public": "BLSTofBDFtc8bRRBjrCo_C61kNXjEdxhLuyhqst7m2PiI4DohFMBiu7J4vMGBFbc0ht9vtwkHGybcxcTCpPrxCI"
+ "vapid_public": "BLSTofBDFtc8bRRBjrCo_C61kNXjEdxhLuyhqst7m2PiI4DohFMBiu7J4vMGBFbc0ht9vtwkHGybcxcTCpPrxCI",
+ "api_url": "https://script.google.com/macros/s/AKfycbx8OtXj5G0V94MgP3gkzMEQuoDo095MwjN3F77sJU419Gz18Z1IE_Wn3BoH0DuH8Nhd_A/exec"
 }
