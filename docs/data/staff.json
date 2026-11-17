@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-17T18:46+02:00",
+ "updated": "2026-11-17T19:10+02:00",
  "people": [
   {
    "id": "3e03449784",
@@ -376,6 +376,10 @@
      "id": "7586ded4a3",
      "name": "גלילוביץ זוהר"
     }
+   ],
+   "commander": "",
+   "grades": [
+    "ט"
    ]
   },
   {
@@ -410,6 +414,10 @@
      "id": "4afef1b947",
      "name": "דהן ירין"
     }
+   ],
+   "commander": "",
+   "grades": [
+    "י"
    ]
   },
   {
@@ -452,6 +460,10 @@
      "id": "be81dadcad",
      "name": "מילץ אליאור"
     }
+   ],
+   "commander": "",
+   "grades": [
+    "יא"
    ]
   },
   {
@@ -486,6 +498,10 @@
      "id": "1dd7caca22",
      "name": "פנחס שחר"
     }
+   ],
+   "commander": "",
+   "grades": [
+    "יב"
    ]
   },
   {
@@ -520,8 +536,14 @@
      "id": "8377d64798",
      "name": "טימור עידו"
     }
+   ],
+   "commander": "",
+   "grades": [
+    "יג",
+    "יד"
    ]
   }
  ],
- "api": "https://script.google.com/macros/s/AKfycbx8OtXj5G0V94MgP3gkzMEQuoDo095MwjN3F77sJU419Gz18Z1IE_Wn3BoH0DuH8Nhd_A/exec"
+ "api": "https://script.google.com/macros/s/AKfycbx8OtXj5G0V94MgP3gkzMEQuoDo095MwjN3F77sJU419Gz18Z1IE_Wn3BoH0DuH8Nhd_A/exec",
+ "cmd_hash": "3def11a35cb749a9ab7002060309541ec8795bc439a5e7f325d87a0696158421"
 }
