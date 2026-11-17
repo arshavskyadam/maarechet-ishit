@@ -392,7 +392,7 @@ def duty_edits(today, prev_day):
         if not r.get("ok"):
             raise ValueError(r.get("error"))
         for e in r["edits"]:
-            out[(e["grade"], float(e["hour"]) if float(e["hour"]) % 1 else int(e["hour"]), e.get("role", ""))] = e
+            out[(duty_group(e["grade"]), float(e["hour"]) if float(e["hour"]) % 1 else int(e["hour"]), e.get("role", ""))] = e
     except Exception as err:  # noqa: BLE001
         print(f"duty edits: engine not reached ({err}), keeping the earlier ones")
         for grade, g in prev_day.items():
