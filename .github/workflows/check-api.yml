@@ -17,4 +17,6 @@ jobs:
           echo "status (known name):"; curl -sSL -m 60 -H "Content-Type: text/plain" -d '{"action":"status","name":"ארשבסקי אדם"}' "$API"; echo
           echo "status (unknown name):"; curl -sSL -m 60 -H "Content-Type: text/plain" -d '{"action":"status","name":"בדיקה בדיקה"}' "$API"; echo
           echo "hq (wrong code):"; curl -sSL -m 60 -H "Content-Type: text/plain" -d '{"action":"hq","code":"0"}' "$API"; echo
+          echo "commander (wrong code):"; curl -sSL -m 60 -H "Content-Type: text/plain" -d '{"action":"cmd_team","code":"0","team":"צוות ט"}' "$API"; echo
+          echo "hq (wrong code) should not list reminders:"; curl -sSL -m 60 -H "Content-Type: text/plain" -d '{"action":"hq","code":"0"}' "$API"; echo
           echo "feed (wrong token):"; curl -sSL -m 60 -H "Content-Type: text/plain" -d '{"action":"push_feed","token":"x"}' "$API"; echo
