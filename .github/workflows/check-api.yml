@@ -1,0 +1,20 @@
+name: Check the reminders engine
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ask the engine a few harmless questions
+        run: |
+          API=$(python3 -c "import json;print(json.load(open('config.json')).get('api_url') or '${{ github.event.inputs.url }}')")
+          API="${API:-https://script.google.com/macros/s/AKfycbx8OtXj5G0V94MgP3gkzMEQuoDo095MwjN3F77sJU419Gz18Z1IE_Wn3BoH0DuH8Nhd_A/exec}"
+          echo "GET:"; curl -sSL -m 60 "$API"; echo
+          echo "status (known name):"; curl -sSL -m 60 -H "Content-Type: text/plain" -d '{"action":"status","name":"ארשבסקי אדם"}' "$API"; echo
+          echo "status (unknown name):"; curl -sSL -m 60 -H "Content-Type: text/plain" -d '{"action":"status","name":"בדיקה בדיקה"}' "$API"; echo
+          echo "hq (wrong code):"; curl -sSL -m 60 -H "Content-Type: text/plain" -d '{"action":"hq","code":"0"}' "$API"; echo
+          echo "feed (wrong token):"; curl -sSL -m 60 -H "Content-Type: text/plain" -d '{"action":"push_feed","token":"x"}' "$API"; echo
