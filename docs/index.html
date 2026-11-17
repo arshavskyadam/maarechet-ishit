@@ -175,6 +175,18 @@ table.week .n { display: block; color: var(--good); font-weight: 600; }
 .hqday h3 { font-size: 1rem; }
 .hqday .r { display: grid; grid-template-columns: 4.5em minmax(0, 1fr); gap: 2px 8px; font-size: .9rem; border-top: 1px solid var(--line); padding-top: 6px; }
 .hqday .r .who { grid-column: 2; font-size: .8rem; color: var(--muted); }
+/* yard duty edited by hand */
+.drow.edit summary { cursor: pointer; }
+.drow .mtag { display: inline-block; padding: 0 8px; border-radius: 999px; border: 1px dashed var(--duty); color: var(--duty); font-size: .75rem; font-weight: 600; }
+.dedit { display: grid; gap: 8px; padding: 4px 12px 12px; }
+.dedit label { display: grid; gap: 4px; font-size: .8rem; color: var(--muted); }
+.dedit select, .dedit input { font: inherit; font-size: 16px; padding: 7px 9px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); width: 100%; box-sizing: border-box; }
+.dedit .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.dedit .chips button, .dedit .acts button { font: inherit; font-size: .85rem; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.dedit .chips button[aria-pressed="true"] { background: var(--duty); border-color: var(--duty); color: var(--surface); }
+.dedit .acts { display: flex; gap: 8px; flex-wrap: wrap; }
+.dedit .acts .save { background: var(--duty); border-color: var(--duty); color: var(--surface); font-weight: 600; }
+.dedit .err { color: var(--bad); font-size: .8rem; margin: 0; }
 /* monthly yard-duty report */
 .rep { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 14px; display: grid; gap: 10px; }
 .rep h3 { font-size: 1rem; margin: 0; }
@@ -406,6 +418,95 @@ body { margin: 0; }
 </div>
 
 <script>
+// ---- yard duty rows, shared by the instructor's page, the team lead, the commander and administration.
+// Team leads, commanders and administration can change a slot by hand: another person, or no one, and a note.
+var DUTY_NOTES = ["שמירות", "משגיח", "אישי"];
+var DUTY_TIMES = { 1: "08:10", 2: "08:55", 3: "09:55", 4: "10:40", 5: "11:30", 6: "12:15", 7: "13:40", 8: "14:25", 9: "15:15", 10: "16:00" };
+function dEsc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+function dGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function dSet(k, v) { try { v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} }
+function dutyEdits(api, date) {
+  if (!api) return Promise.resolve([]);
+  return fetch(api, { method: "POST", body: JSON.stringify({ action: "duty_get", date: date }) }).then(function (r) { return r.json(); })
+    .then(function (r) { return r.ok ? r.edits : []; }).catch(function () { return []; });
+}
+// Puts hand-made changes on top of the hourly list, so they show at once and not only after the next update.
+function dutyApply(duty, date, edits) {
+  var day = duty && duty.days && duty.days[date]; if (!day) return;
+  edits.forEach(function (e) {
+    var g = day[e.grade]; if (!g) return;
+    g.slots.forEach(function (sl) {
+      if (Number(sl.hour) === Number(e.hour) && (sl.role || "") === (e.role || "")) {
+        sl.people = e.person ? [e.person] : []; sl.manual = true; sl.note = e.note; sl.by = e.by;
+      }
+    });
+  });
+}
+function dutySlots(grade, g, me, edit) {
+  return '<div class="crows">' + g.slots.map(function (sl) {
+    var lunch = !!sl.role, t = lunch ? "13:00" : (DUTY_TIMES[sl.hour] || "");
+    var who = sl.people.length ? sl.people.map(function (x) { return '<span' + (x === me ? ' class="me"' : "") + '>' + dEsc(x) + '</span>'; }).join("") : '<em>' + (sl.manual ? "אף אחד" : "אין מדריך פנוי") + '</em>';
+    if (sl.manual) who += '<i class="mtag" title="' + dEsc(sl.by ? "נערך על ידי " + sl.by : "") + '">✋ ' + dEsc(sl.note || "ידני") + '</i>';
+    var key = ' data-grade="' + dEsc(grade) + '" data-hour="' + sl.hour + '" data-role="' + dEsc(sl.role || "") + '"';
+    return '<details class="crow drow' + (lunch ? " lunch" : "") + (edit ? " edit" : "") + '"' + key + '><summary><span class="hr">' + (lunch ? "" : sl.hour) + '</span><span class="tm">' + t + '</span><span class="sb">' + (lunch ? "הפסקה גדולה · " + dEsc(sl.role) : "תורן חצר") + (edit ? ' <small class="muted">✏️</small>' : "") + '</span><span class="who">' + who + '</span></summary>' +
+      (edit ? '<div class="dedit-slot"></div>' : "") + '</details>';
+  }).join("") + '</div>';
+}
+// ctx: { api, date, duty, by, code: function () -> saved code or "", saveCode: function (code), redraw: function (),
+//        device: function () -> { name, token } of the phone's linked person or null, askCode: show a code field }
+function dutyBind(box, ctx) {
+  box.querySelectorAll("details.drow.edit").forEach(function (det) {
+    det.addEventListener("toggle", function () {
+      if (!det.open) return;
+      var grade = det.getAttribute("data-grade"), hour = Number(det.getAttribute("data-hour")), role = det.getAttribute("data-role");
+      var g = ctx.duty.days[ctx.date][grade], sl = g.slots.filter(function (x) { return Number(x.hour) === hour && (x.role || "") === role; })[0];
+      var free = role ? (g.members || []) : ((g.free_at || {})[String(hour)] || []);
+      var others = (g.members || []).filter(function (m) { return free.indexOf(m) < 0; });
+      var cur = sl.people[0] || "", code = ctx.code(), dev = !code && ctx.device ? ctx.device() : null;
+      var opt = function (m, tag) { return '<option value="' + dEsc(m) + '"' + (m === cur ? " selected" : "") + '>' + dEsc(m) + (tag ? " · " + tag : "") + '</option>'; };
+      if (cur && (g.members || []).indexOf(cur) < 0) others.push(cur);
+      var h = '<form class="dedit">' +
+        '<label>מי תורן<select name="p"><option value=""' + (cur ? "" : " selected") + '>— אף אחד —</option>' + free.map(function (m) { return opt(m, role ? "" : "פנוי"); }).join("") + others.map(function (m) { return opt(m, "בשיעור"); }).join("") + '</select></label>' +
+        '<label>הערה</label><div class="chips">' + DUTY_NOTES.map(function (n) { return '<button type="button" data-n="' + n + '" aria-pressed="' + (sl.note === n) + '">' + n + '</button>'; }).join("") + '</div>' +
+        '<input name="n" type="text" maxlength="40" placeholder="או הערה אחרת" value="' + dEsc(sl.manual && DUTY_NOTES.indexOf(sl.note) < 0 ? sl.note || "" : "") + '">' +
+        (code || dev ? "" : ctx.askCode ? '<label>קוד (כמו של ראשי הצוותים)<input name="c" type="password" inputmode="numeric" autocomplete="off"></label>' :
+          '<p class="err" style="color:var(--muted)">כדי לשנות, קודם מקשרים את הטלפון: בדף שלך לוחצים "🔔 הפעלת התראות וקישור הטלפון".</p>') +
+        '<div class="acts"><button type="submit" class="save"' + (code || dev || ctx.askCode ? "" : " disabled") + '>שמירה</button>' + (sl.manual ? '<button type="button" data-clear="1">החזרה לחלוקה האוטומטית</button>' : "") + '</div><p class="err"></p></form>';
+      var holder = det.querySelector(".dedit-slot"); holder.innerHTML = h;
+      var form = holder.querySelector("form"), note = sl.manual && DUTY_NOTES.indexOf(sl.note) >= 0 ? sl.note : "";
+      form.querySelector(".chips").onclick = function (e) {
+        var b = e.target.closest("button[data-n]"); if (!b) return;
+        note = note === b.getAttribute("data-n") ? "" : b.getAttribute("data-n");
+        form.querySelectorAll(".chips button").forEach(function (x) { x.setAttribute("aria-pressed", x.getAttribute("data-n") === note); });
+        if (note) form.n.value = "";
+      };
+      function send(action) {
+        var c = code || (form.c ? form.c.value.trim() : "");
+        if (!c && !dev) { form.querySelector(".err").textContent = "צריך קוד."; return; }
+        if (!ctx.api) { form.querySelector(".err").textContent = "המנוע לא מחובר."; return; }
+        form.querySelector(".err").textContent = "שומר…";
+        fetch(ctx.api, { method: "POST", body: JSON.stringify({ action: action, code: c, name: dev && !c ? dev.name : "", token: dev && !c ? dev.token : "", date: ctx.date, grade: grade, hour: hour, role: role,
+          person: form.p.value, note: form.n.value.trim() || note, by: ctx.by || "" }) }).then(function (r) { return r.json(); }).then(function (r) {
+          if (!r.ok) {
+            form.querySelector(".err").textContent = r.error === "wrong code" ? "הקוד לא נכון." : r.error === "not your team" ? "אפשר לשנות רק את התורנויות של הצוות שלך." :
+              r.error === "not this phone" ? "הטלפון הזה כבר לא מקושר. מקשרים מחדש דרך \"הפעלת התראות וקישור הטלפון\"." : "לא נשמר. נסו שוב.";
+            if (r.error === "wrong code") ctx.saveCode(null); return;
+          }
+          if (c) ctx.saveCode(c);
+          if (action === "duty_set") { sl.people = form.p.value ? [form.p.value] : []; sl.manual = true; sl.note = form.n.value.trim() || note; sl.by = ctx.by || ""; }
+          return dutyEdits(ctx.api, ctx.date).then(function (edits) {
+            if (action === "duty_clear") { sl.manual = false; sl.note = ""; }
+            dutyApply(ctx.duty, ctx.date, edits); ctx.redraw();
+          });
+        }).catch(function () { form.querySelector(".err").textContent = "אין חיבור. נסו שוב."; });
+      }
+      form.onsubmit = function (e) { e.preventDefault(); send("duty_set"); };
+      var cl = form.querySelector("[data-clear]"); if (cl) cl.onclick = function () { send("duty_clear"); };
+    });
+  });
+}
+</script>
+<script>
 // The monthly yard-duty report of one team (for its lead and its commander). Returns "" when there is nothing yet.
 var REP_MONTHS = ["ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני", "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר"];
 function dutyReport(rep, team, month) {
@@ -424,10 +525,10 @@ function dutyReport(rep, team, month) {
     '<div class="tw"><table><tr><th>מדריך</th><th>סה"כ</th><th>שעות</th>' + roles.map(function (r) { return '<th>' + e(r.split(" ").pop()) + '</th>'; }).join("") + '<th>±ממוצע</th></tr>';
   var notes = [];
   rows.forEach(function (p) {
-    var d = Math.round((p.total - avg) * 10) / 10, off = Math.abs(p.total - avg) > 3;
+    var d = Math.round(p.total - avg), off = Math.abs(p.total - avg) > 3;
     if (off && p.possible) notes.push(e(p.name) + ": היה פנוי ב־" + Math.round(100 * p.free / p.possible) + "% מהשעות של השכבה");
     h += '<tr' + (off ? ' class="off"' : "") + '><td>' + e(p.name) + '</td><td><b>' + p.total + '</b></td><td>' + p.hours + '</td>' +
-      roles.map(function (r) { return '<td>' + ((p.lunch || {})[r] || 0) + '</td>'; }).join("") + '<td>' + (d > 0 ? "+" : "") + d + '</td></tr>';
+      roles.map(function (r) { return '<td>' + ((p.lunch || {})[r] || 0) + '</td>'; }).join("") + '<td dir="ltr">' + (d > 0 ? "+" : "") + d + '</td></tr>';
   });
   h += '</table></div>' + (notes.length ? '<div class="why">⚠️ פער של יותר מ־3 תורנויות מהממוצע. ' + notes.join(" · ") + '</div>' : "") +
     '<p class="muted" style="margin:0;font-size:.78rem">"שעות" = תורן חצר בזמן השיעורים; "חד\"א" ו"בשכבה" = התפקידים בהפסקה הגדולה. כל משבצת הולכת למדריך הפנוי שעשה הכי מעט תורנויות החודש (ובתיקו, למי שהיה תורן הכי מזמן). בתחילת כל חודש הספירה מתחילה מחדש, והדוחות הקודמים נשמרים כאן.</p></section>';
@@ -1105,13 +1206,6 @@ function startApp(DATA, TEAM) {
 
   // ---- duty tab: one grade's list per day
   var DT = { grade: null, day: null };
-  function dutyRows(g, me) {
-    return '<div class="crows">' + g.slots.map(function (sl) {
-      var lunch = !!sl.role, t = lunch ? "13:00" : (NH[sl.hour] ? NH[sl.hour][1] : "");
-      var who = sl.people.length ? sl.people.map(function (x) { return '<span' + (x === me ? ' class="me"' : "") + '>' + esc(x) + '</span>'; }).join("") : '<em>אין מדריך פנוי</em>';
-      return '<details class="crow drow' + (lunch ? " lunch" : "") + '"><summary><span class="hr">' + (lunch ? "" : sl.hour) + '</span><span class="tm">' + t + '</span><span class="sb">' + (lunch ? "הפסקה גדולה · " + esc(sl.role) : "תורן חצר") + '</span><span class="who">' + who + '</span></summary></details>';
-    }).join("") + '</div>';
-  }
   function renderDuty() {
     var day = DUTY && DUTY.days[todayISO];
     document.getElementById("duty-strip").hidden = true;
@@ -1136,7 +1230,12 @@ function startApp(DATA, TEAM) {
     document.getElementById("duty-grades").innerHTML = grades.map(function (g) { return '<button type="button" data-grade="' + g + '" aria-pressed="' + (g === DT.grade) + '">' + g + "'</button>"; }).join("");
     document.getElementById("duty-title").textContent = "תורני חצר · שכבה " + DT.grade + "' · היום " + dm(todayISO);
     document.getElementById("duty-mine").textContent = mine.length ? "לך יש " + mine.length + " תורנויות היום" : "";
-    document.getElementById("duty-body").innerHTML = dutyRows(day[DT.grade], ME) + '<p class="muted" style="margin:0;font-size:.8rem">הרשימה נבנית כל בוקר מהמערכת של כל הצוות: רק מי שפנוי באותה שעה, ובחלוקה שווה לפי טבלת צדק חודשית. אם מישהו מקבל שיעור, הוא מוחלף לבד בעדכון הבא.</p>' + leadReport();
+    var body = document.getElementById("duty-body");
+    body.innerHTML = dutySlots(DT.grade, day[DT.grade], ME, !!API) + '<p class="muted" style="margin:0;font-size:.8rem">הרשימה נבנית כל בוקר מהמערכת של כל הצוות: רק מי שפנוי באותה שעה, ובחלוקה שווה לפי טבלת צדק חודשית. אם מישהו מקבל שיעור, הוא מוחלף לבד בעדכון הבא.' + (API ? ' כל אחד מהצוות יכול ללחוץ על שורה ולשנות אותה ידנית, למשל כשמישהו בשמירות.' : "") + '</p>' + leadReport();
+    if (API) dutyBind(body, { api: API, date: todayISO, duty: DUTY, redraw: renderDuty, askCode: !!(TEAM || DATA.hq),
+      by: DATA.hq ? "אנשי מנהלה" : (owner() || DATA.teacher || ""),
+      code: function () { return (DATA.hq && DATA.hq.code) || (TEAM ? dGet("duty-code") : "") || ""; }, saveCode: function (c) { dSet("duty-code", c); },
+      device: function () { var o = owner(); var t = o && dGet("dev-" + o); return t ? { name: o, token: t } : null; } });
   }
   // Team leads see their team's monthly report under the list.
   var REP = null, REPM = null;
@@ -1168,6 +1267,8 @@ function startApp(DATA, TEAM) {
   syncNotes();
   pushSetup();
   getJSON("data/duty.json").then(function (d) {
+    return dutyEdits(DATA.api || "", todayISO).then(function (edits) { dutyApply(d, todayISO, edits); return d; });
+  }).then(function (d) {
     DUTY = d; renderDay();
     if (!document.getElementById("view-week").hidden) renderWeek();
     if (!document.getElementById("view-duty").hidden) renderDuty();
@@ -1185,7 +1286,6 @@ function startApp(DATA, TEAM) {
   function json(url) { return fetch(url + "?t=" + Math.floor(Date.now() / 60000)).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }); }
   var picker = document.getElementById("picker"), app = document.getElementById("app");
   // HQ: everyone's reminders, behind the HQ code kept in the unit's private store
-  var HQH = ["07:25", "08:10", "08:55", "09:55", "10:40", "11:30", "12:15", "13:40", "14:25", "15:15", "16:00"];
   // HQ mode: after the HQ code, every page opens without its lock, with that person's reminders shown.
   function hqSession() {
     try { var h = JSON.parse(localStorage.getItem("hq") || "null"); if (h && Date.now() - h.at < 12 * 3600e3) return h; } catch (e) {}
@@ -1224,17 +1324,17 @@ function startApp(DATA, TEAM) {
         return '<button type="button" data-hq="' + t[0] + '" aria-pressed="' + (t[0] === state.tab) + '">' + esc(t[1]) + '</button>';
       }).join("") + '</div></div>';
       if (state.tab) {
-        h += '<div class="dayhead"><h2>תורני חצר · שכבה ' + esc(state.tab) + "' · היום</h2></div><div class=\"crows\">" + day[state.tab].slots.map(function (sl) {
-          var lunch = !!sl.role;
-          var who = sl.people.length ? sl.people.map(function (x) { return '<span>' + esc(x) + '</span>'; }).join("") : '<em>אין מדריך פנוי</em>';
-          return '<details class="crow drow' + (lunch ? " lunch" : "") + '"><summary><span class="hr">' + (lunch ? "" : sl.hour) + '</span><span class="tm">' + (lunch ? "13:00" : HQH[sl.hour] || "") + '</span><span class="sb">' + (lunch ? "הפסקה גדולה · " + esc(sl.role) : "תורן חצר") + '</span><span class="who">' + who + '</span></summary></details>';
-        }).join("") + '</div>';
+        h += '<div class="dayhead"><h2>תורני חצר · שכבה ' + esc(state.tab) + "' · היום</h2></div>" + dutySlots(state.tab, day[state.tab], "", !!api);
       } else h += '<div class="empty">אין רשימת תורני חצר להיום.</div>';
       box.innerHTML = h + '<button type="button" class="hqbtn" id="hq-back2">חזרה לרשימת האנשים</button>';
       box.querySelector(".gr").onclick = function (e) { var b = e.target.closest("button[data-hq]"); if (b) { state.tab = b.getAttribute("data-hq"); draw(); } };
+      if (state.tab && api) dutyBind(box, { api: api, date: today, duty: state.duty, by: "אנשי מנהלה", redraw: draw,
+        code: function () { return (hq && hq.code) || ""; }, saveCode: function () {} });
       document.getElementById("hq-back2").onclick = function () { location.reload(); };
     }
-    json("data/duty.json").then(function (d) { state.duty = d; draw(); }).catch(draw);
+    json("data/duty.json").then(function (d) {
+      return dutyEdits(api, today).then(function (edits) { dutyApply(d, today, edits); state.duty = d; draw(); });
+    }).catch(draw);
   }
   // ---- a team's commander: today's yard duty, the team's reminders and changes, and notifications
   function cmdSession(team) {
@@ -1278,11 +1378,7 @@ function startApp(DATA, TEAM) {
         var day = state.duty && state.duty.days[today];
         var grades = day ? (team.grades || []).filter(function (g) { return day[g]; }) : [];
         h += grades.length ? grades.map(function (g) {
-          return '<div class="dayhead"><h2>שכבה ' + esc(g) + "'</h2></div><div class=\"crows\">" + day[g].slots.map(function (sl) {
-            var lunch = !!sl.role;
-            var who = sl.people.length ? sl.people.map(function (x) { return '<span>' + esc(x) + '</span>'; }).join("") : '<em>אין מדריך פנוי</em>';
-            return '<details class="crow drow' + (lunch ? " lunch" : "") + '"><summary><span class="hr">' + (lunch ? "" : sl.hour) + '</span><span class="tm">' + (lunch ? "13:00" : HQH[sl.hour] || "") + '</span><span class="sb">' + (lunch ? "הפסקה גדולה · " + esc(sl.role) : "תורן חצר") + '</span><span class="who">' + who + '</span></summary></details>';
-          }).join("") + '</div>';
+          return '<div class="dayhead"><h2>שכבה ' + esc(g) + "'</h2></div>" + dutySlots(g, day[g], "", !!api);
         }).join("") : '<div class="empty">אין רשימת תורני חצר להיום.</div>';
       } else if (state.tab === "rep") {
         if (!state.rep) h += '<p class="muted">טוען…</p>';
@@ -1304,11 +1400,15 @@ function startApp(DATA, TEAM) {
       }
       box.innerHTML = h + '<button type="button" class="hqbtn" id="cmd-out">יציאה</button>';
       box.querySelector(".gr").onclick = function (e) { var b = e.target.closest("button[data-t]"); if (b) { state.tab = b.getAttribute("data-t"); draw(); } };
+      if (state.tab === "duty" && api && state.duty) dutyBind(box, { api: api, date: today, duty: state.duty, by: team.commander || "", redraw: draw,
+        code: function () { return code || ""; }, saveCode: function () {} });
       var rp = document.getElementById("duty-report"); if (rp) rp.onclick = function (e) { var b = e.target.closest("button[data-rm]"); if (b) { state.rm = b.getAttribute("data-rm"); draw(); } };
       document.getElementById("cmd-out").onclick = function () { set("cmd", null); location.reload(); };
       cmdPush(api, team, code);
     }
-    json("data/duty.json").then(function (x) { state.duty = x; draw(); }).catch(draw);
+    json("data/duty.json").then(function (x) {
+      return dutyEdits(api, today).then(function (edits) { dutyApply(x, today, edits); state.duty = x; draw(); });
+    }).catch(draw);
     json("data/duty_reports.json").then(function (x) { state.rep = x; draw(); }).catch(function () { state.rep = {}; draw(); });
     if (api) fetch(api, { method: "POST", body: JSON.stringify({ action: "cmd_team", code: code, team: team.name }) }).then(function (r) { return r.json(); })
       .then(function (r) { state.rem = r.ok ? r.reminders : []; draw(); }).catch(function () { state.rem = []; draw(); });
