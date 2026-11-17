@@ -263,6 +263,12 @@ def build_person(person, raw, extras, now, offline, morning):
 
 
 LUNCH_ROLES = ["לוקח לחד\"א", "נשאר בשכבה"]
+DUTY_GROUP = {"יג": "מכללה", "יד": "מכללה"}  # grades 13 and 14 share one yard-duty list
+
+
+def duty_group(grade):
+    return DUTY_GROUP.get(grade, grade)
+
 
 
 def build_duty(raw, now, people, team_defs):
@@ -287,7 +293,7 @@ def build_duty(raw, now, people, team_defs):
             continue
         for name, cell in entries:
             if cell["lessons"]:
-                grade_hours.setdefault((date, grade_of(name)), set()).add(hour)
+                grade_hours.setdefault((date, duty_group(grade_of(name))), set()).add(hour)
     # The fairness table: every duty since the start of this month counts, not only today's.
     hist_path = DOCS / "data" / "duty_history.json"
     hist = load_json(hist_path, {}).get("days", {})
@@ -318,7 +324,7 @@ def build_duty(raw, now, people, team_defs):
             members = [m for m in t.get("members", []) if m in known]
             if not members:
                 continue
-            for grade in t.get("grades", []):
+            for grade in dict.fromkeys(duty_group(g) for g in t.get("grades", [])):
                 hours = sorted(grade_hours.get((date, grade), ()))
                 if not hours:
                     continue

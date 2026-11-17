@@ -142,7 +142,7 @@ function commander(req) {
 
 /** Yard duty edited by hand (team leads, commanders, administration): who, and a short note. */
 var DUTY_HEAD = ['תאריך', 'שכבה', 'שעה', 'תפקיד', 'מדריך', 'הערה', 'נערך על ידי', 'מתי'];
-var GRADES = ['ט', 'י', 'יא', 'יב', 'יג', 'יד'];
+var GRADES = ['ט', 'י', 'יא', 'יב', 'יג', 'יד', 'מכללה'];  // 13 and 14 share one list, "מכללה"
 
 function dutyGet(req) {
   var date = String(req.date || '');
@@ -191,7 +191,9 @@ function teamGrades(team) {
   var n = head.indexOf('שם הצוות'), g = head.indexOf('שכבות');
   for (var i = 0; i < rows.length; i++) {
     if (String(rows[i][n]).trim() === team) {
-      return String(rows[i][g] || '').replace(/['"׳״]/g, '').split(/[,\s]+/).filter(function (x) { return x; });
+      var list = String(rows[i][g] || '').replace(/['"׳״]/g, '').split(/[,\s]+/).filter(function (x) { return x; });
+      if (list.indexOf('יג') >= 0 || list.indexOf('יד') >= 0) list.push('מכללה');
+      return list;
     }
   }
   return [];

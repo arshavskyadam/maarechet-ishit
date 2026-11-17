@@ -47,6 +47,10 @@ def mins(t):
 BIG_CHANGES = ("מילוי מקום", "לא מתקיים", "נוסף", "ביטול", "כיתת חינוך")
 
 
+def where(grade):
+    return grade if grade == "מכללה" else f"שכבה {grade}'"
+
+
 def short(name):
     return name.split(" ")[0] if name else name
 
@@ -68,13 +72,14 @@ def commander_messages(team, all_reminders, duty, ids, today, dow, morning):
     out = []
     if morning:
         parts = []
-        for grade in team.get("grades", []):
+        groups = list(dict.fromkeys("מכללה" if x in ("יג", "יד") else x for x in team.get("grades", [])))
+        for grade in groups:
             g = duty.get(grade)
             if not g:
                 continue
             hours = [f"{int(s['hour'])} {short(s['people'][0]) if s['people'] else '—'}" for s in g["slots"] if not s.get("role")]
             lunch = [f"{s['role']} – {s['people'][0] if s['people'] else '—'}" for s in g["slots"] if s.get("role")]
-            prefix = f"שכבה {grade}': " if len(team.get("grades", [])) > 1 else ""
+            prefix = f"{where(grade)}: " if len(groups) > 1 else ""
             parts.append("🛡️ תורני חצר: " + prefix + " · ".join(hours))
             if lunch:
                 parts.append("🍽️ הפסקה גדולה: " + " · ".join(lunch))
@@ -213,7 +218,7 @@ def main():
             else:
                 parts.append("אין לך שיעורים היום")
             for d in sorted(duties, key=lambda d: d["hour"]):
-                parts.append(f"תורנות: {d['role'] or 'תורן חצר'} · שכבה {d['grade']}' · " + (f"בהפסקה ({LUNCH})" if d["role"] else f"שעה {d['hour']}"))
+                parts.append(f"תורנות: {d['role'] or 'תורן חצר'} · {where(d['grade'])} · " + (f"בהפסקה ({LUNCH})" if d["role"] else f"שעה {d['hour']}"))
             for r in sorted(rems, key=lambda r: r["hour"]):
                 parts.append(f"תזכורת בשעה {r['hour']}: {r['text']}")
             messages.append(("morning", "☀️ היום שלך", "\n".join(parts)))
@@ -226,7 +231,7 @@ def main():
                 t = LUNCH if d["role"] else HOURS.get(d["hour"], "")
                 if t and window[0] <= mins(t) < window[1]:
                     what = d["role"] or "תורן חצר"
-                    messages.append((f"duty|{d['grade']}|{d['hour']}|{d['role']}", f"🛡️ {what} · {t}", f"שכבה {d['grade']}'"))
+                    messages.append((f"duty|{d['grade']}|{d['hour']}|{d['role']}", f"🛡️ {what} · {t}", where(d["grade"])))
         for c in data.get("changelog", []):
             if c.get("date") == today and c.get("detected_at") == latest.get("scraped_at"):
                 messages.append((f"chg|{c.get('kind')}|{c.get('text')}", "⚠️ שינוי במערכת להיום", f"{c.get('kind')}: {fill(c.get('text', ''))}"))
