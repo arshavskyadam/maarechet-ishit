@@ -280,12 +280,12 @@ body { margin: 0; }
     <h1>המערכת האישית שלי</h1>
     <p class="muted" style="margin:0">בחרו את השם שלכם. הבחירה נשמרת במכשיר הזה, ואפשר להחליף בכל רגע.</p>
   </header>
-  <div id="hq-bar" class="hqbar" hidden><b>🏢 מצב מפקדה</b><span>גישה לכל המערכות ולכל התזכורות</span>
+  <div id="hq-bar" class="hqbar" hidden><b>🏢 מצב אנשי מנהלה</b><span>גישה לכל המערכות ולכל התזכורות</span>
     <div class="btns"><button type="button" id="hq-duty">תורני חצר ותזכורות</button><button type="button" id="hq-exit">יציאה</button></div></div>
     <input id="psearch" type="search" autocomplete="off" placeholder="🔍 חיפוש לפי שם, לדוגמה: רינה">
   <div class="plist" id="plist"></div>
   <div id="hq" hidden></div>
-  <button type="button" class="hqbtn" id="hq-go" hidden>🏢 כניסת מפקדה</button>
+  <button type="button" class="hqbtn" id="hq-go" hidden>🏢 כניסת אנשי מנהלה</button>
 </div>
 <div class="wrap picker" id="pin" dir="rtl" lang="he" hidden>
   <header>
@@ -662,7 +662,7 @@ function startApp(DATA, TEAM) {
     notes = [];
     var hqb = document.createElement("div");
     hqb.className = "hqbar";
-    hqb.innerHTML = '<b>🏢 מצב מפקדה</b><span>צופים במערכת של ' + esc(ME) + (API ? ", כולל התזכורות שלו" : "") + '</span><div class="btns"><button type="button" id="hq-list">חזרה לרשימה</button><button type="button" id="hq-out">יציאה ממצב מפקדה</button></div>';
+    hqb.innerHTML = '<b>🏢 מצב אנשי מנהלה</b><span>צופים במערכת של ' + esc(ME) + (API ? ", כולל התזכורות שלו" : "") + '</span><div class="btns"><button type="button" id="hq-list">חזרה לרשימה</button><button type="button" id="hq-out">יציאה ממצב אנשי מנהלה</button></div>';
     document.querySelector("#app header").appendChild(hqb);
     document.getElementById("hq-list").onclick = function () { try { localStorage.removeItem("me"); } catch (e) {} location.reload(); };
     document.getElementById("hq-out").onclick = function () { try { localStorage.removeItem("me"); localStorage.removeItem("hq"); } catch (e) {} location.reload(); };
@@ -727,7 +727,7 @@ function startApp(DATA, TEAM) {
       '<label for="n-text">מה לזכור<input type="text" id="n-text" maxlength="80" placeholder="למשל: ללכת לאפסנאות" autocomplete="off"></label>' +
       '<label class="chk" for="n-weekly"><input type="checkbox" id="n-weekly"> לחזור כל ' + esc(d.weekday) + '</label>' +
       '<div class="btns"><button type="submit" class="save">שמירה</button><button type="button" id="n-cancel">ביטול</button></div>' +
-      '<p class="hint">' + (API ? "התזכורות נשמרות במערכת היחידה ומופיעות בכל מכשיר. ראש הצוות והמפקדה יכולים לראות אותן." : "התזכורות נשמרות רק בטלפון הזה, ורק אתם רואים אותן.") + '</p></form>';
+      '<p class="hint">' + (API ? "התזכורות נשמרות במערכת היחידה ומופיעות בכל מכשיר. ראש הצוות ואנשי המנהלה יכולים לראות אותן." : "התזכורות נשמרות רק בטלפון הזה, ורק אתם רואים אותן.") + '</p></form>';
     document.getElementById("n-text").focus();
   }
   document.getElementById("daylist").addEventListener("click", function (e) {
@@ -1098,7 +1098,7 @@ function startApp(DATA, TEAM) {
     var box = document.getElementById("hq");
     document.getElementById("plist").hidden = true; document.getElementById("psearch").hidden = true; document.getElementById("hq-go").hidden = true; box.hidden = false;
     if (!api) { set("hq", JSON.stringify({ code: "", at: Date.now() })); location.reload(); return; }
-    box.innerHTML = '<form class="noteform" id="hq-form" style="border-color:var(--accent)"><label for="hq-code">קוד מפקדה<input type="password" id="hq-code" inputmode="numeric" autocomplete="off"></label>' +
+    box.innerHTML = '<form class="noteform" id="hq-form" style="border-color:var(--accent)"><label for="hq-code">קוד אנשי מנהלה<input type="password" id="hq-code" inputmode="numeric" autocomplete="off"></label>' +
       '<div class="btns"><button type="submit" class="save" style="background:var(--accent);border-color:var(--accent)">כניסה</button><button type="button" id="hq-back">חזרה</button></div><p class="hint" id="hq-err"></p></form>';
     document.getElementById("hq-back").onclick = function () { location.reload(); };
     document.getElementById("hq-form").onsubmit = function (e) {

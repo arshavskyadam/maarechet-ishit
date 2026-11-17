@@ -77,7 +77,7 @@ function handle(req) {
 }
 
 function hq(req) {
-  var want = String(setting('קוד מפקדה') || '');
+  var want = String(setting('קוד אנשי מנהלה') || '');
   if (!want || String(req.code || '').trim() !== want) {
     Utilities.sleep(800);
     return { ok: false, error: 'wrong code' };
@@ -112,8 +112,8 @@ function store() {
   var ss = SpreadsheetApp.create('המערכת האישית — קודים ותזכורות (פרטי)');
   ss.getSheets()[0].setName('קודים').appendRow(['שם', 'קוד', 'נוצר']);
   ss.insertSheet('תזכורות').appendRow(['מזהה', 'שם', 'צוות', 'תאריך', 'יום בשבוע', 'שעה', 'תזכורת', 'נוצר']);
-  ss.insertSheet('הגדרות').appendRow(['קוד מפקדה', '']);
-  ss.getSheetByName('הגדרות').getRange('A3').setValue('כותבים את קוד המפקדה בתא B1. רק מי שיודע אותו רואה את כל התזכורות של היחידה.');
+  ss.insertSheet('הגדרות').appendRow(['קוד אנשי מנהלה', '']);
+  ss.getSheetByName('הגדרות').getRange('A3').setValue('כותבים את קוד אנשי המנהלה בתא B1. רק מי שיודע אותו רואה את כל התזכורות של היחידה.');
   props.setProperty('STORE_ID', ss.getId());
   return ss;
 }
