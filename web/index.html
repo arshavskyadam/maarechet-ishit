@@ -29,6 +29,8 @@
   --warn: #f0b45c; --warn-soft: #3a2a12; --bad: #f28b82; --bad-soft: #3d1e1c; --good: #7fd19b; --good-soft: #163222; color-scheme: dark }
 
 * { box-sizing: border-box }
+/* 16px stops iPhone from zooming in when a field is tapped */
+input, select, textarea { font-size: 16px !important; }
 body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5; }
 .wrap { max-width: 760px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 48px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; }
 .wrap > *, .wrap section > * { min-width: 0; }
@@ -253,7 +255,7 @@ body { margin: 0; }
     <h1>המערכת האישית שלי</h1>
     <p class="muted" style="margin:0">בחרו את השם שלכם. הבחירה נשמרת במכשיר הזה, ואפשר להחליף בכל רגע.</p>
   </header>
-    <input id="psearch" type="search" autocomplete="off" placeholder="🔍 חיפוש לפי שם">
+    <input id="psearch" type="search" autocomplete="off" placeholder="🔍 חיפוש לפי שם, לדוגמה: רינה">
   <div class="plist" id="plist"></div>
 </div>
 <div class="wrap picker" id="pin" dir="rtl" lang="he" hidden>
