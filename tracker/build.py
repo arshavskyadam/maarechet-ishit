@@ -245,7 +245,7 @@ def build_person(person, raw, extras, now, offline, morning):
             summary_sent = today  # only once a day, and only once it really went out
 
     write_json(path, {
-        "teacher": display, "source": CONFIG["site"], "roles": person.get("roles", []),
+        "teacher": display, "source": CONFIG["site"], "roles": person.get("roles", []), "api": CONFIG.get("api_url", ""),
         "ends_title": ("שעת סיום · שכבה " + ", ".join(person["lead_grades"])) if person.get("lead_grades")
         else ("שעת סיום · " + ("הכיתות שלי" if len(homerooms) > 1 else "הכיתה שלי") if homerooms else ""),
         "summary_sent": summary_sent, "latest": latest, "changelog": changelog,
@@ -402,7 +402,7 @@ def main():
             if t.get("lead") in by_name:
                 teams.append({"name": team_name, "lead": by_name[t["lead"]], "members": members})
         write_json(DOCS / "data" / "staff.json",
-                   {"updated": now.isoformat(timespec="minutes"), "people": people, "teams": teams})
+                   {"updated": now.isoformat(timespec="minutes"), "people": people, "teams": teams, "api": CONFIG.get("api_url", "")})
         if raw:
             build_duty(raw, now, people, team_defs)
     DOCS.mkdir(exist_ok=True)
