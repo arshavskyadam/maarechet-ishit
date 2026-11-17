@@ -1038,8 +1038,16 @@ function startApp(DATA, TEAM) {
       document.getElementById("duty-body").innerHTML = '<div class="empty">אין רשימת תורני חצר להיום. הרשימה נוצרת בעדכון של הבוקר בימי לימודים.</div>';
       return;
     }
-    var grades = ["ט", "י", "יא", "יב", "יג", "יד"].filter(function (g) { return day[g]; });
+    // Each team sees its own grades; administration staff see every grade.
+    var grades = ["ט", "י", "יא", "יב", "יג", "יד"].filter(function (g) { return day[g] && (DATA.hq || day[g].team === DATA.team_name); });
     var mine = dutyOn(todayISO);
+    if (!grades.length) {
+      document.getElementById("duty-grades").innerHTML = "";
+      document.getElementById("duty-title").textContent = "תורני חצר · היום";
+      document.getElementById("duty-mine").textContent = "";
+      document.getElementById("duty-body").innerHTML = '<div class="empty">רשימת תורני החצר מוצגת לצוות של כל שכבה.</div>';
+      return;
+    }
     if (!DT.grade || !day[DT.grade]) DT.grade = mine.length ? mine[0].grade : grades[0];
     document.getElementById("duty-grades").innerHTML = grades.map(function (g) { return '<button type="button" data-grade="' + g + '" aria-pressed="' + (g === DT.grade) + '">' + g + "'</button>"; }).join("");
     document.getElementById("duty-title").textContent = "תורני חצר · שכבה " + DT.grade + "' · היום " + dm(todayISO);
@@ -1257,6 +1265,8 @@ function startApp(DATA, TEAM) {
             function () { return { name: m.name, data: null }; });
         })).then(function (members) { return { name: team.name, members: members }; });
         var hq = hqSession(); if (hq) d.hq = hq;
+        var myTeam = (st.teams || []).filter(function (t) { return t.members.some(function (m) { return m.id === me; }); })[0];
+        d.team_name = myTeam ? myTeam.name : "";
         return load.catch(function () { return null; }).then(function (t) { startApp(d, t); });
       });
     });
