@@ -143,6 +143,7 @@ def load_staff(raw):
     for r in read_sheet_tab(CONFIG.get("teams_tab", "צוותים"), "שם הצוות") or []:
         if r.get("שם הצוות") in teams:
             teams[r["שם הצוות"]]["grades"] = [g.strip(" '\"") for g in r.get("שכבות", "").split(",") if g.strip()]
+            teams[r["שם הצוות"]]["commander"] = " ".join(r.get("מפקד", "").split())
     print(f"staff from sheet: {len(staff)} people, {len(teams)} teams")
     return staff, teams
 
@@ -401,9 +402,11 @@ def main():
         for team_name, t in team_defs.items():
             members = [{"id": by_name[m], "name": m} for m in t["members"] if m in by_name]
             if t.get("lead") in by_name:
-                teams.append({"name": team_name, "lead": by_name[t["lead"]], "members": members})
+                teams.append({"name": team_name, "lead": by_name[t["lead"]], "members": members,
+                              "commander": t.get("commander", ""), "grades": t.get("grades", [])})
         write_json(DOCS / "data" / "staff.json",
-                   {"updated": now.isoformat(timespec="minutes"), "people": people, "teams": teams, "api": CONFIG.get("api_url", "")})
+                   {"updated": now.isoformat(timespec="minutes"), "people": people, "teams": teams, "api": CONFIG.get("api_url", ""),
+                    "cmd_hash": CONFIG.get("commander_hash", "")})
         if raw:
             build_duty(raw, now, people, team_defs)
     DOCS.mkdir(exist_ok=True)

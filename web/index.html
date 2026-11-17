@@ -162,6 +162,8 @@ table.week .n { display: block; color: var(--good); font-weight: 600; }
 .pushbtn { font: inherit; font-weight: 600; color: var(--accent); background: var(--accent-soft); border: 1px solid var(--accent); border-radius: var(--r); padding: 9px 12px; cursor: pointer; width: 100%; }
 .pushon { font-size: .85rem; color: var(--good); font-weight: 600; }
 .pushhint { font-size: .82rem; color: var(--muted); margin: 0; }
+/* commander */
+.lead.cmdbtn { border-style: dashed; }
 /* HQ */
 .hqbar { background: var(--accent-soft); border: 1px solid var(--accent); border-radius: var(--r); padding: 10px 14px; display: grid; gap: 4px; }
 .hqbar b { color: var(--accent); }
@@ -289,8 +291,8 @@ body { margin: 0; }
     <h1>המערכת האישית שלי</h1>
     <p class="muted" style="margin:0">בחרו את השם שלכם. הבחירה נשמרת במכשיר הזה, ואפשר להחליף בכל רגע.</p>
   </header>
-  <div id="hq-bar" class="hqbar" hidden><b>🏢 מצב אנשי מנהלה</b><span>גישה לכל המערכות ולכל התזכורות</span>
-    <div class="btns"><button type="button" id="hq-duty">תורני חצר ותזכורות</button><button type="button" id="hq-exit">יציאה</button></div></div>
+  <div id="hq-bar" class="hqbar" hidden><b>🏢 מצב אנשי מנהלה</b><span>גישה למערכות של כולם</span>
+    <div class="btns"><button type="button" id="hq-duty">תורני חצר</button><button type="button" id="hq-exit">יציאה</button></div></div>
     <input id="psearch" type="search" autocomplete="off" placeholder="🔍 חיפוש לפי שם, לדוגמה: רינה">
   <div class="plist" id="plist"></div>
   <div id="hq" hidden></div>
@@ -678,7 +680,7 @@ function startApp(DATA, TEAM) {
     notes = [];
     var hqb = document.createElement("div");
     hqb.className = "hqbar";
-    hqb.innerHTML = '<b>🏢 מצב אנשי מנהלה</b><span>צופים במערכת של ' + esc(ME) + (API ? ", כולל התזכורות שלו" : "") + '</span><div class="btns"><button type="button" id="hq-list">חזרה לרשימה</button><button type="button" id="hq-out">יציאה ממצב אנשי מנהלה</button></div>';
+    hqb.innerHTML = '<b>🏢 מצב אנשי מנהלה</b><span>צופים במערכת של ' + esc(ME) + "" + '</span><div class="btns"><button type="button" id="hq-list">חזרה לרשימה</button><button type="button" id="hq-out">יציאה ממצב אנשי מנהלה</button></div>';
     document.querySelector("#app header").appendChild(hqb);
     document.getElementById("hq-list").onclick = function () { try { localStorage.removeItem("me"); } catch (e) {} location.reload(); };
     document.getElementById("hq-out").onclick = function () { try { localStorage.removeItem("me"); localStorage.removeItem("hq"); } catch (e) {} location.reload(); };
@@ -690,15 +692,7 @@ function startApp(DATA, TEAM) {
     return list.map(function (x) { var n = { id: x.id, hour: x.hour, text: x.text }; if (x.date) n.date = x.date; else n.dow = x.dow; return n; });
   }
   function syncNotes() {
-    if (HQ) {
-      if (!API || !HQ.code) return Promise.resolve();
-      return call({ action: "hq", code: HQ.code }).then(function (r) {
-        if (!r.ok) return;
-        HQALL = r.reminders; notes = fromServer(r.reminders.filter(function (x) { return x.name === ME; }));
-        renderDay(); if (!document.getElementById("view-week").hidden) renderWeek();
-        if (!document.getElementById("view-team").hidden) renderTeam();
-      }).catch(function () {});
-    }
+    if (HQ) return Promise.resolve();  // administration staff do not see personal reminders
     if (!API || !myToken()) return Promise.resolve();
     return call({ action: "list", name: ME, token: myToken() }).then(function (r) {
       if (r.ok) { notes = fromServer(r.reminders); saveNotes(); renderDay(); if (!document.getElementById("view-week").hidden) renderWeek(); }
@@ -915,13 +909,7 @@ function startApp(DATA, TEAM) {
   }
   function teamNotes() {
     var box = document.getElementById("team-notes"); if (!box) return;
-    if (HQ) {
-      var listH = HQALL.filter(function (x) { return x.team === TEAM.name && x.name !== ME && (x.date ? x.date === teamDay : x.dow === dow(teamDay)); }).sort(function (a, b) { return a.hour - b.hour; });
-      box.innerHTML = '<div class="ends"><h3>תזכורות הצוות · ' + dm(teamDay) + '</h3>' + (listH.length ? '<table>' + listH.map(function (x) {
-        return '<tr><td class="t" style="text-align:start;width:4.5em">שעה ' + x.hour + '</td><td><b>' + esc(x.text) + '</b><div class="muted" style="font-size:.8rem">' + esc(x.name) + (x.date ? "" : " · כל שבוע") + '</div></td></tr>';
-      }).join("") + '</table>' : '<p class="muted" style="margin:0">אין תזכורות ביום הזה.</p>') + '</div>';
-      return;
-    }
+    if (HQ) { box.innerHTML = ""; return; }
     if (!myToken()) {
       box.innerHTML = '<div class="ends"><h3>תזכורות הצוות</h3><p class="muted" style="margin:0">כדי לראות את התזכורות של הצוות, קשרו את הטלפון למערכת שלכם.</p><div id="tn-login"><button type="button" class="addnote" id="tn-go">🔗 קישור הטלפון</button></div></div>';
       document.getElementById("tn-go").onclick = function () { bindFlow(document.getElementById("tn-login"), function () { renderTeam(); }); };
@@ -1181,13 +1169,11 @@ function startApp(DATA, TEAM) {
       var day = state.duty && state.duty.days[today];
       var grades = day ? ["ט", "י", "יא", "יב", "יג", "יד"].filter(function (g) { return day[g]; }) : [];
       var tabs = grades.map(function (g) { return [g, g + "'"]; });
-      if (state.rem) tabs.push(["rem", "כל התזכורות"]);
       if (!state.tab || !tabs.some(function (t) { return t[0] === state.tab; })) state.tab = tabs.length ? tabs[0][0] : null;
       var h = '<div class="clspick"><div class="g gr">' + tabs.map(function (t) {
         return '<button type="button" data-hq="' + t[0] + '" aria-pressed="' + (t[0] === state.tab) + '">' + esc(t[1]) + '</button>';
       }).join("") + '</div></div>';
-      if (state.tab === "rem") h += hqReminders(state.rem);
-      else if (state.tab) {
+      if (state.tab) {
         h += '<div class="dayhead"><h2>תורני חצר · שכבה ' + esc(state.tab) + "' · היום</h2></div><div class=\"crows\">" + day[state.tab].slots.map(function (sl) {
           var lunch = !!sl.role;
           var who = sl.people.length ? sl.people.map(function (x) { return '<span>' + esc(x) + '</span>'; }).join("") : '<em>אין מדריך פנוי</em>';
@@ -1199,10 +1185,118 @@ function startApp(DATA, TEAM) {
       document.getElementById("hq-back2").onclick = function () { location.reload(); };
     }
     json("data/duty.json").then(function (d) { state.duty = d; draw(); }).catch(draw);
-    if (api && hq.code) {
-      fetch(api, { method: "POST", body: JSON.stringify({ action: "hq", code: hq.code }) }).then(function (r) { return r.json(); })
-        .then(function (r) { if (r.ok) { state.rem = r.reminders; draw(); } }).catch(function () {});
+  }
+  // ---- a team's commander: today's yard duty, the team's reminders and changes, and notifications
+  function cmdSession(team) {
+    try { var c = JSON.parse(localStorage.getItem("cmd") || "null"); if (c && c.team === team && Date.now() - c.at < 30 * 864e5) return c; } catch (e) {}
+    return null;
+  }
+  function cmdOpen(d, team) {
+    if (!team) return;
+    var box = document.getElementById("hq");
+    document.getElementById("plist").hidden = true; document.getElementById("psearch").hidden = true;
+    document.getElementById("hq-go").hidden = true; document.getElementById("hq-bar").hidden = true; box.hidden = false;
+    var sess = cmdSession(team.name);
+    if (sess) { cmdBoard(d, team, sess.code); return; }
+    box.innerHTML = '<form class="noteform" id="cmd-form" style="border-color:var(--accent)"><p style="margin:0;font-weight:600">🎖️ ' + esc(team.commander) + ' · מפקד ' + esc(team.name) + '</p>' +
+      '<label for="cmd-code">קוד<input type="password" id="cmd-code" inputmode="numeric" autocomplete="off"></label>' +
+      '<div class="btns"><button type="submit" class="save" style="background:var(--accent);border-color:var(--accent)">כניסה</button><button type="button" id="cmd-back">חזרה</button></div><p class="hint" id="cmd-err"></p></form>';
+    document.getElementById("cmd-back").onclick = function () { location.reload(); };
+    document.getElementById("cmd-form").onsubmit = function (e) {
+      e.preventDefault();
+      var code = document.getElementById("cmd-code").value.trim();
+      sha256("commander:" + code).then(function (h) {
+        if (!d.cmd_hash || h !== d.cmd_hash) { document.getElementById("cmd-err").textContent = "הקוד לא נכון."; return; }
+        set("cmd", JSON.stringify({ team: team.name, code: code, at: Date.now() }));
+        cmdBoard(d, team, code);
+      });
+    };
+    document.getElementById("cmd-code").focus();
+  }
+  function cmdBoard(d, team, code) {
+    var box = document.getElementById("hq"), api = d.api || "";
+    var today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jerusalem" }).format(new Date());
+    var dow = new Date(today + "T12:00:00").getDay();
+    var state = { tab: "duty", duty: null, rem: null, chg: null };
+    var BIG = /מילוי מקום|לא מתקיים|נוסף|ביטול|כיתת חינוך/;
+    function draw() {
+      var h = '<div class="hqbar"><b>🎖️ ' + esc(team.commander) + ' · מפקד ' + esc(team.name) + '</b><span>היום ' + today.slice(8, 10) + "." + today.slice(5, 7) + '</span><div id="cmd-push" class="btns"></div></div>' +
+        '<div class="clspick"><div class="g gr">' + [["duty", "תורני חצר"], ["rem", "תזכורות הצוות"], ["chg", "שינויים היום"]].map(function (t) {
+          return '<button type="button" data-t="' + t[0] + '" aria-pressed="' + (t[0] === state.tab) + '">' + t[1] + '</button>';
+        }).join("") + '</div></div>';
+      if (state.tab === "duty") {
+        var day = state.duty && state.duty.days[today];
+        var grades = day ? (team.grades || []).filter(function (g) { return day[g]; }) : [];
+        h += grades.length ? grades.map(function (g) {
+          return '<div class="dayhead"><h2>שכבה ' + esc(g) + "'</h2></div><div class=\"crows\">" + day[g].slots.map(function (sl) {
+            var lunch = !!sl.role;
+            var who = sl.people.length ? sl.people.map(function (x) { return '<span>' + esc(x) + '</span>'; }).join("") : '<em>אין מדריך פנוי</em>';
+            return '<details class="crow drow' + (lunch ? " lunch" : "") + '"><summary><span class="hr">' + (lunch ? "" : sl.hour) + '</span><span class="tm">' + (lunch ? "13:00" : HQH[sl.hour] || "") + '</span><span class="sb">' + (lunch ? "הפסקה גדולה · " + esc(sl.role) : "תורן חצר") + '</span><span class="who">' + who + '</span></summary></details>';
+          }).join("") + '</div>';
+        }).join("") : '<div class="empty">אין רשימת תורני חצר להיום.</div>';
+      } else if (state.tab === "rem") {
+        if (!api) h += '<div class="empty">התזכורות יופיעו כשהמנוע יופעל.</div>';
+        else if (!state.rem) h += '<p class="muted">טוען…</p>';
+        else {
+          var items = state.rem.filter(function (x) { return x.date ? x.date === today : x.dow === dow; }).sort(function (a, b) { return a.hour - b.hour; });
+          h += '<section class="hqday"><h3>תזכורות הצוות להיום</h3>' + (items.length ? items.map(function (x) {
+            return '<div class="r"><b>שעה ' + x.hour + '</b><span>' + esc(x.text) + '</span><span class="who">' + esc(x.name) + '</span></div>';
+          }).join("") : '<p class="muted" style="margin:0">אין תזכורות היום.</p>') + '</section>';
+        }
+      } else {
+        if (!state.chg) h += '<p class="muted">טוען…</p>';
+        else h += '<section class="hqday"><h3>שינויים במערכת של הצוות להיום</h3>' + (state.chg.length ? state.chg.map(function (x) {
+          return '<div class="r"><b>' + esc(x.name) + '</b><span>' + esc(x.kind) + ': ' + esc(x.text) + '</span></div>';
+        }).join("") : '<p class="muted" style="margin:0">אין שינויים היום.</p>') + '</section>';
+      }
+      box.innerHTML = h + '<button type="button" class="hqbtn" id="cmd-out">יציאה</button>';
+      box.querySelector(".gr").onclick = function (e) { var b = e.target.closest("button[data-t]"); if (b) { state.tab = b.getAttribute("data-t"); draw(); } };
+      document.getElementById("cmd-out").onclick = function () { set("cmd", null); location.reload(); };
+      cmdPush(api, team, code);
     }
+    json("data/duty.json").then(function (x) { state.duty = x; draw(); }).catch(draw);
+    if (api) fetch(api, { method: "POST", body: JSON.stringify({ action: "cmd_team", code: code, team: team.name }) }).then(function (r) { return r.json(); })
+      .then(function (r) { state.rem = r.ok ? r.reminders : []; draw(); }).catch(function () { state.rem = []; draw(); });
+    Promise.all(team.members.map(function (m) {
+      return json("data/" + encodeURIComponent(m.id) + ".json").then(function (x) {
+        return (x.changelog || []).filter(function (c) { return c.date === today && BIG.test(c.kind || ""); }).map(function (c) {
+          var t = String(c.text || ""), mm = t.match(/^(.+?)\s*<-\s*(.+)$/); return { name: m.name, kind: c.kind, text: mm ? mm[2] + " במקום " + mm[1] : t };
+        });
+      }).catch(function () { return []; });
+    })).then(function (lists) {
+      var seen = {}; state.chg = [].concat.apply([], lists).filter(function (x) { var k = x.name + x.kind + x.text; if (seen[k]) return false; seen[k] = 1; return true; });
+      draw();
+    });
+  }
+  function b64k(s) {
+    var pad = "=".repeat((4 - s.length % 4) % 4), raw = atob((s + pad).replace(/-/g, "+").replace(/_/g, "/"));
+    var out = new Uint8Array(raw.length); for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i); return out;
+  }
+  function cmdPush(api, team, code) {
+    var box = document.getElementById("cmd-push"); if (!box || !api) return;
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+      box.innerHTML = '<span style="font-size:.82rem">🔔 להתראות באייפון: מוסיפים את האתר למסך הבית ופותחים משם.</span>'; return;
+    }
+    if (get("cmd-push") === team.name) { box.innerHTML = '<span class="pushon">🔔 התראות הצוות פעילות בטלפון הזה</span>'; return; }
+    box.innerHTML = '<button type="button" id="cmd-pgo">🔔 הפעלת התראות הצוות</button>';
+    document.getElementById("cmd-pgo").onclick = function () {
+      json("data/staff.json").then(function (st) {
+        var any = st.people.filter(function (p) { return p.id; })[0];
+        return json("data/" + encodeURIComponent(any.id) + ".json");
+      }).then(function (x) {
+        return navigator.serviceWorker.register("sw.js").then(function (reg) {
+          return Notification.requestPermission().then(function (perm) {
+            if (perm !== "granted") { box.innerHTML = '<span style="font-size:.82rem">ההתראות חסומות. אפשר להפעיל אותן בהגדרות הטלפון.</span>'; return; }
+            return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64k(x.vapid) }).then(function (sub) {
+              return fetch(api, { method: "POST", body: JSON.stringify({ action: "cmd_subscribe", code: code, team: team.name, sub: sub.toJSON() }) }).then(function (r) { return r.json(); });
+            }).then(function (r) {
+              if (r && r.ok) { set("cmd-push", team.name); cmdPush(api, team, code); }
+              else box.innerHTML = '<span style="font-size:.82rem">לא הצלחתי להפעיל. נסו שוב.</span>';
+            });
+          });
+        });
+      }).catch(function () { box.innerHTML = '<span style="font-size:.82rem">לא הצלחתי להפעיל. נסו שוב.</span>'; });
+    };
   }
   function hqReminders(all) {
     var days = [], d = new Date();
@@ -1242,6 +1336,7 @@ function startApp(DATA, TEAM) {
         rest.forEach(function (p) { placed[p.id] = 1; });
         var mentors = rest.filter(isMentor), instructors = rest.filter(function (p) { return !isMentor(p); });
         return '<section class="team"><header><h2>' + esc(t.name) + '</h2><span>' + (rest.length + (lead ? 1 : 0)) + ' אנשים</span></header><div class="body">' +
+          (t.commander ? '<button type="button" class="lead cmdbtn" data-cmd="' + esc(t.name) + '"><span class="crown">🎖️</span><span><b>' + esc(t.commander) + '</b><small>מפקד הצוות</small></span></button>' : "") +
           (lead ? '<button type="button" class="lead" data-id="' + esc(lead.id) + '"><span class="crown">👑</span><span><b>' + esc(lead.name) + '</b><small>ראש צוות' + (lead.homerooms.length ? ' · ' + esc(lead.homerooms.join(", ")) : "") + '</small></span></button>' : "") +
           '<div class="grid2">' + instructors.map(btn).join("") + '</div>' +
           (mentors.length ? '<div class="sub">🤝 חונכות</div><div class="grid2">' + mentors.map(mentorBtn).join("") + '</div>' : "") +
@@ -1268,6 +1363,8 @@ function startApp(DATA, TEAM) {
         var hb = document.getElementById("hq-go"); hb.hidden = false; hb.onclick = function () { hqLogin(d.api || ""); };
       }
       list.onclick = function (e) {
+        var c = e.target.closest("button[data-cmd]");
+        if (c) { cmdOpen(d, (d.teams || []).filter(function (t) { return t.name === c.getAttribute("data-cmd"); })[0]); return; }
         var b = e.target.closest("button[data-id]"); if (!b) return;
         set("me", b.getAttribute("data-id")); location.reload();
       };

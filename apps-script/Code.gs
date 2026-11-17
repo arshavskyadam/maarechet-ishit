@@ -33,6 +33,7 @@ function doPost(e) {
 function handle(req) {
   var a = req.action;
   if (a === 'hq') return hq(req);
+  if (a === 'cmd_team' || a === 'cmd_subscribe') return commander(req);
   if (a === 'push_feed' || a === 'push_drop') return pushFeed(req);
   var name = clean(req.name);
   var staff = staffList();
@@ -106,13 +107,35 @@ function pushFeed(req) {
            reminders: reminders(sheet('תזכורות'), function () { return true; }) };
 }
 
+/** Administration staff: the code only opens every page; personal reminders stay private. */
 function hq(req) {
   var want = String(setting('קוד אנשי מנהלה') || '');
   if (!want || String(req.code || '').trim() !== want) {
     Utilities.sleep(800);
     return { ok: false, error: 'wrong code' };
   }
-  return { ok: true, reminders: reminders(sheet('תזכורות'), function () { return true; }) };
+  return { ok: true };
+}
+
+/** A team's commander (above the team lead): the team's reminders, and notifications for the team. */
+function commander(req) {
+  var want = String(setting('קוד מפקדים') || '');
+  if (!want || String(req.code || '').trim() !== want) {
+    Utilities.sleep(800);
+    return { ok: false, error: 'wrong code' };
+  }
+  var team = clean(req.team);
+  if (!team || !staffList().some(function (p) { return p.team === team; })) return { ok: false, error: 'unknown team' };
+  if (req.action === 'cmd_team') {
+    return { ok: true, reminders: reminders(sheet('תזכורות'), function (r) { return r.team === team; }) };
+  }
+  var sub = req.sub || {};
+  if (!sub.endpoint || !/^https:\/\//.test(sub.endpoint)) return { ok: false, error: 'bad subscription' };
+  var subs = sheet('מנויים');
+  var at = findRow(subs, 2, sub.endpoint);
+  if (at > 0) subs.deleteRow(at);
+  subs.appendRow(['מפקד:' + team, sub.endpoint, JSON.stringify(sub), new Date()]);
+  return { ok: true };
 }
 
 // ---- data
@@ -159,8 +182,10 @@ function ensureSheet(name, head) {
 }
 
 function setting(key) {
-  var rows = sheet('הגדרות').getDataRange().getValues();
+  var tab = sheet('הגדרות');
+  var rows = tab.getDataRange().getValues();
   for (var i = 0; i < rows.length; i++) if (rows[i][0] === key) return rows[i][1];
+  tab.appendRow([key, '']);  // a new setting shows up as an empty row, ready to fill in
   return '';
 }
 

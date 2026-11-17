@@ -43,6 +43,78 @@ def mins(t):
     return int(h) * 60 + int(m)
 
 
+BIG_CHANGES = ("מילוי מקום", "לא מתקיים", "נוסף", "ביטול", "כיתת חינוך")
+
+
+def short(name):
+    return name.split(" ")[0] if name else name
+
+
+def commander_messages(team, all_reminders, duty, ids, today, dow, morning):
+    """A team's commander: one morning summary, then one message per run with the team's new changes."""
+    members = [m["name"] for m in team.get("members", [])]
+    changes, fresh = [], []
+    for m in team.get("members", []):
+        data = load_json(DOCS / "data" / f"{m['id']}.json", {})
+        stamp = data.get("latest", {}).get("scraped_at")
+        for c in data.get("changelog", []):
+            if c.get("date") == today and any(k in (c.get("kind") or "") for k in BIG_CHANGES):
+                line = f"{m['name']}: {c.get('kind')} · {fill(c.get('text', ''))}"
+                if line not in changes:
+                    changes.append(line)
+                    if c.get("detected_at") == stamp:
+                        fresh.append(line)
+    out = []
+    if morning:
+        parts = []
+        for grade in team.get("grades", []):
+            g = duty.get(grade)
+            if not g:
+                continue
+            hours = [f"{int(s['hour'])} {short(s['people'][0]) if s['people'] else '—'}" for s in g["slots"] if not s.get("role")]
+            lunch = [f"{s['role']} – {s['people'][0] if s['people'] else '—'}" for s in g["slots"] if s.get("role")]
+            prefix = f"שכבה {grade}': " if len(team.get("grades", [])) > 1 else ""
+            parts.append("🛡️ תורני חצר: " + prefix + " · ".join(hours))
+            if lunch:
+                parts.append("🍽️ הפסקה גדולה: " + " · ".join(lunch))
+        homeroom = [c.split(": ", 1)[1].replace("כיתת חינוך · ", "") for c in changes if "כיתת חינוך" in c]
+        if homeroom:
+            parts.append("🏫 שינויים בכיתות: " + " · ".join(dict.fromkeys(homeroom))[:180])
+        others = [c for c in changes if "כיתת חינוך" not in c]
+        if others:
+            parts.append(f"⚠️ {len(others)} שינויים במערכת של הצוות")
+        n = sum(1 for r in all_reminders if r.get("team") == team["name"] and (r["date"] == today if r["date"] else r["dow"] == dow))
+        if n:
+            parts.append(f"📝 {n} תזכורות של הצוות להיום")
+        if parts:
+            out.append(("cmd-morning", f"👥 {team['name']} · הבוקר", "\n".join(parts)))
+    elif fresh:
+        body = "\n".join(fresh[:6]) + (f"\nועוד {len(fresh) - 6}" if len(fresh) > 6 else "")
+        out.append(("cmd-chg|" + hashlib.sha1("|".join(fresh).encode("utf-8")).hexdigest()[:10],
+                    f"⚠️ {team['name']} · {len(fresh)} שינויים חדשים להיום", body))
+    return out
+
+
+def send_all(webpush, WebPushException, sub, name, messages, log, today, key):
+    """Send each message once; returns (sent, gone) where gone means the phone turned notifications off."""
+    sent = 0
+    for tag, title, body in messages:
+        k = hashlib.sha1(f"{name}|{today}|{tag}".encode("utf-8")).hexdigest()[:16]
+        if k in log:
+            continue
+        try:
+            webpush(subscription_info=sub, data=json.dumps({"title": title, "body": body, "tag": tag[:40], "url": CONFIG.get("site_url", "./")}, ensure_ascii=False),
+                    vapid_private_key=key, vapid_claims={"sub": CONFIG.get("site_url") or "https://github.com"}, ttl=3600)
+            log[k] = today
+            sent += 1
+        except WebPushException as e:
+            code = getattr(e.response, "status_code", None)
+            if code in (404, 410):
+                return sent, True
+            print(f"notifications: one failed ({code})")
+    return sent, False
+
+
 def main():
     token, key = os.environ.get("PUSH_TOKEN", ""), os.environ.get("VAPID_PRIVATE_KEY", "")
     if not (token and key and CONFIG.get("api_url")):
@@ -66,8 +138,18 @@ def main():
     window = (now.hour * 60 + now.minute, now.hour * 60 + now.minute + 60)
     sent = dropped = 0
 
+    teams = {t["name"]: t for t in staff.get("teams", [])}
     for entry in feed["subs"]:
         name, sub = entry["name"], entry["sub"]
+        if name.startswith("מפקד:"):
+            team = teams.get(name.split(":", 1)[1])
+            messages = commander_messages(team, feed["reminders"], duty, ids, today, dow, morning) if team else []
+            ok, gone = send_all(webpush, WebPushException, sub, name, messages, log, today, key)
+            sent += ok
+            if gone:
+                api({"action": "push_drop", "token": token, "endpoint": sub.get("endpoint", "")})
+                dropped += 1
+            continue
         data = load_json(DOCS / "data" / f"{ids.get(name, '')}.json", {})
         latest = data.get("latest", {})
         lessons = [l for l in latest.get("lessons", []) if l.get("date") == today and l.get("status") != "cancelled"]
