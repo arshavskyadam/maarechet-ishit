@@ -519,10 +519,10 @@ function dutyReport(rep, team, month) {
     '<div class="tw"><table><tr><th>מדריך</th><th>סה"כ</th><th>שעות</th>' + roles.map(function (r) { return '<th>' + e(r.split(" ").pop()) + '</th>'; }).join("") + '<th>±ממוצע</th></tr>';
   var notes = [];
   rows.forEach(function (p) {
-    var d = Math.round((p.total - avg) * 10) / 10, off = Math.abs(p.total - avg) > 3;
+    var d = Math.round(p.total - avg), off = Math.abs(p.total - avg) > 3;
     if (off && p.possible) notes.push(e(p.name) + ": היה פנוי ב־" + Math.round(100 * p.free / p.possible) + "% מהשעות של השכבה");
     h += '<tr' + (off ? ' class="off"' : "") + '><td>' + e(p.name) + '</td><td><b>' + p.total + '</b></td><td>' + p.hours + '</td>' +
-      roles.map(function (r) { return '<td>' + ((p.lunch || {})[r] || 0) + '</td>'; }).join("") + '<td>' + (d > 0 ? "+" : "") + d + '</td></tr>';
+      roles.map(function (r) { return '<td>' + ((p.lunch || {})[r] || 0) + '</td>'; }).join("") + '<td dir="ltr">' + (d > 0 ? "+" : "") + d + '</td></tr>';
   });
   h += '</table></div>' + (notes.length ? '<div class="why">⚠️ פער של יותר מ־3 תורנויות מהממוצע. ' + notes.join(" · ") + '</div>' : "") +
     '<p class="muted" style="margin:0;font-size:.78rem">"שעות" = תורן חצר בזמן השיעורים; "חד\"א" ו"בשכבה" = התפקידים בהפסקה הגדולה. כל משבצת הולכת למדריך הפנוי שעשה הכי מעט תורנויות החודש (ובתיקו, למי שהיה תורן הכי מזמן). בתחילת כל חודש הספירה מתחילה מחדש, והדוחות הקודמים נשמרים כאן.</p></section>';
