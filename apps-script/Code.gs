@@ -35,6 +35,8 @@ function handle(req) {
   if (a === 'hq') return hq(req);
   if (a === 'cmd_team' || a === 'cmd_subscribe') return commander(req);
   if (a === 'push_feed' || a === 'push_drop') return pushFeed(req);
+  if (a === 'duty_get') return dutyGet(req);
+  if (a === 'duty_set' || a === 'duty_clear') return dutySet(req);
   var name = clean(req.name);
   var staff = staffList();
   var me = staff.filter(function (p) { return p.name === name; })[0];
@@ -135,6 +137,38 @@ function commander(req) {
   var at = findRow(subs, 2, sub.endpoint);
   if (at > 0) subs.deleteRow(at);
   subs.appendRow(['מפקד:' + team, sub.endpoint, JSON.stringify(sub), new Date()]);
+  return { ok: true };
+}
+
+/** Yard duty edited by hand (team leads, commanders, administration): who, and a short note. */
+var DUTY_HEAD = ['תאריך', 'שכבה', 'שעה', 'תפקיד', 'מדריך', 'הערה', 'נערך על ידי', 'מתי'];
+var GRADES = ['ט', 'י', 'יא', 'יב', 'יג', 'יד'];
+
+function dutyGet(req) {
+  var date = String(req.date || '');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { ok: false, error: 'bad date' };
+  var rows = ensureSheet('תורנויות ידניות', DUTY_HEAD).getDataRange().getDisplayValues().slice(1);
+  return { ok: true, edits: rows.filter(function (r) { return r[0] === date; }).map(function (r) {
+    return { grade: r[1], hour: Number(r[2]), role: r[3], person: r[4], note: r[5], by: r[6] };
+  }) };
+}
+
+function dutySet(req) {
+  var code = String(req.code || '').trim();
+  var ok = [setting('קוד מפקדים'), setting('קוד אנשי מנהלה')].some(function (w) { return w && code === String(w); });
+  if (!ok) { Utilities.sleep(800); return { ok: false, error: 'wrong code' }; }
+  var date = String(req.date || ''), grade = clean(req.grade), hour = Number(req.hour), role = clean(req.role).slice(0, 30);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || GRADES.indexOf(grade) < 0 || !(hour >= 0 && hour <= 12)) return { ok: false, error: 'bad slot' };
+  var person = clean(req.person);
+  if (person && !staffList().some(function (p) { return p.name === person; })) return { ok: false, error: 'unknown name' };
+  var tab = ensureSheet('תורנויות ידניות', DUTY_HEAD);
+  var rows = tab.getDataRange().getDisplayValues();
+  for (var i = rows.length - 1; i >= 1; i--) {
+    if (rows[i][0] === date && rows[i][1] === grade && Number(rows[i][2]) === hour && rows[i][3] === role) tab.deleteRow(i + 1);
+  }
+  if (req.action === 'duty_set') {
+    tab.appendRow(["'" + date, grade, "'" + hour, role, person, clean(req.note).slice(0, 40), clean(req.by).slice(0, 40), new Date()]);
+  }
   return { ok: true };
 }
 

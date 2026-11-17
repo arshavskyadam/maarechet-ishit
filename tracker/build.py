@@ -301,6 +301,7 @@ def build_duty(raw, now, people, team_defs):
                         count[c] = count.get(c, 0) + 1
                         last[c] = max(last.get(c, ""), d)
     days = {}
+    edits = duty_edits(today, prev.get(today, {}))
 
     def pick(cands, date, key, taken):
         # fewest duties this month first, then whoever had one longest ago
@@ -310,6 +311,9 @@ def build_duty(raw, now, people, team_defs):
 
     for date in dates:
         day_out, taken_at = {}, {}
+        for (grade, h, role), e in edits.items():  # hand-made choices come first
+            if e["person"]:
+                taken_at.setdefault(h, set()).add(e["person"])
         for team, t in team_defs.items():
             members = [m for m in t.get("members", []) if m in known]
             if not members:
@@ -327,6 +331,17 @@ def build_duty(raw, now, people, team_defs):
                 free_hours = {m: sum(1 for h, r in wanted if not r and (date, h) not in busy.get(m, set())) for m in members}
                 for h, role in wanted:
                     taken = taken_at.setdefault(h, set())
+                    e = edits.get((grade, h, role))
+                    if e:
+                        chosen = [e["person"]] if e["person"] else []
+                        for c in chosen:
+                            count[c] = count.get(c, 0) + 1
+                            last[c] = date
+                        slot = {"hour": h, "people": chosen, "manual": True, "note": e.get("note", ""), "by": e.get("by", "")}
+                        if role:
+                            slot["role"] = role
+                        slots.append(slot)
+                        continue
                     if role:
                         cands = [m for m in members]  # the whole team is out of class during the break
                     else:
@@ -342,10 +357,12 @@ def build_duty(raw, now, people, team_defs):
                         slot["role"] = role
                     slots.append(slot)
                 day_out[grade] = {"team": team, "slots": sorted(slots, key=lambda x: x["hour"]),
-                                  "hours": sum(1 for h, r in wanted if not r), "free": free_hours}
+                                  "hours": sum(1 for h, r in wanted if not r), "free": free_hours, "members": members,
+                                  "free_at": {str(h): [m for m in members if (date, h) not in busy.get(m, set())] for h, r in wanted if not r}}
         days[date] = day_out
     write_json(path, {"updated": now.isoformat(timespec="minutes"), "lunch_roles": LUNCH_ROLES,
-                      "days": {d: {g: {"team": v["team"], "slots": v["slots"]} for g, v in day.items()} for d, day in days.items()}})
+                      "days": {d: {g: {"team": v["team"], "slots": v["slots"], "members": v["members"], "free_at": v["free_at"]}
+                                   for g, v in day.items()} for d, day in days.items()}})
     # Keep about two months of days; the monthly reports below are kept for good.
     hist.update(days)
     keep_from = (now.date().replace(day=1) - timedelta(days=1)).replace(day=1).isoformat()
@@ -353,6 +370,32 @@ def build_duty(raw, now, people, team_defs):
     write_json(hist_path, {"updated": now.isoformat(timespec="minutes"), "days": hist})
     build_duty_reports(hist, team_defs, known, now)
     print(f"duty lists for {len(dates)} days")
+
+
+def duty_edits(today, prev_day):
+    """Yard duty changed by hand in the site, from the engine. If the engine can't be reached, the hand-made
+    slots already in duty.json are kept as they are."""
+    out = {}
+    try:
+        if not CONFIG.get("api_url"):
+            raise ValueError("no engine")
+        req = urllib.request.Request(CONFIG["api_url"], data=json.dumps({"action": "duty_get", "date": today}).encode(),
+                                     method="POST", headers={"Content-Type": "text/plain"})
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            r = json.loads(resp.read().decode("utf-8"))
+        if not r.get("ok"):
+            raise ValueError(r.get("error"))
+        for e in r["edits"]:
+            out[(e["grade"], float(e["hour"]) if float(e["hour"]) % 1 else int(e["hour"]), e.get("role", ""))] = e
+    except Exception as err:  # noqa: BLE001
+        print(f"duty edits: engine not reached ({err}), keeping the earlier ones")
+        for grade, g in prev_day.items():
+            for s in g.get("slots", []):
+                if s.get("manual"):
+                    out[(grade, s["hour"], s.get("role", ""))] = {"person": (s["people"] or [""])[0], "note": s.get("note", ""), "by": s.get("by", "")}
+    if out:
+        print(f"duty edits: {len(out)}")
+    return out
 
 
 def build_duty_reports(hist, team_defs, known, now):
