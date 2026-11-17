@@ -32,6 +32,7 @@ function doPost(e) {
 function handle(req) {
   var a = req.action;
   if (a === 'hq') return hq(req);
+  if (a === 'push_feed' || a === 'push_drop') return pushFeed(req);
   var name = clean(req.name);
   var staff = staffList();
   var me = staff.filter(function (p) { return p.name === name; })[0];
@@ -69,11 +70,35 @@ function handle(req) {
     if (rr > 0 && rem.getRange(rr, 2).getValue() === name) rem.deleteRow(rr);
     return { ok: true };
   }
+  if (a === 'subscribe') {
+    var sub = req.sub || {};
+    if (!sub.endpoint || !/^https:\/\//.test(sub.endpoint)) return { ok: false, error: 'bad subscription' };
+    var subs = sheet('מנויים');
+    var at = findRow(subs, 2, sub.endpoint);
+    if (at > 0) subs.deleteRow(at);
+    subs.appendRow([name, sub.endpoint, JSON.stringify(sub), new Date()]);
+    return { ok: true };
+  }
   if (a === 'team') {
     if (!me.lead) return { ok: false, error: 'not a team lead' };
     return { ok: true, team: me.team, reminders: reminders(rem, function (r) { return r.team === me.team && r.name !== name; }) };
   }
   return { ok: false, error: 'unknown action' };
+}
+
+/** For the hourly update only: who wants notifications, and the reminders to send. Needs the notification key. */
+function pushFeed(req) {
+  var key = String(setting('מפתח התראות') || '');
+  if (!key || String(req.token || '') !== key) { Utilities.sleep(800); return { ok: false, error: 'wrong token' }; }
+  var subs = sheet('מנויים');
+  if (req.action === 'push_drop') {
+    var at = findRow(subs, 2, String(req.endpoint || ''));
+    if (at > 0) subs.deleteRow(at);
+    return { ok: true };
+  }
+  var rows = subs.getDataRange().getValues().slice(1).filter(function (r) { return r[0] && r[2]; });
+  return { ok: true, subs: rows.map(function (r) { return { name: r[0], sub: JSON.parse(r[2]) }; }),
+           reminders: reminders(sheet('תזכורות'), function () { return true; }) };
 }
 
 function hq(req) {
@@ -113,7 +138,9 @@ function store() {
   ss.getSheets()[0].setName('קודים').appendRow(['שם', 'קוד', 'נוצר']);
   ss.insertSheet('תזכורות').appendRow(['מזהה', 'שם', 'צוות', 'תאריך', 'יום בשבוע', 'שעה', 'תזכורת', 'נוצר']);
   ss.insertSheet('הגדרות').appendRow(['קוד אנשי מנהלה', '']);
-  ss.getSheetByName('הגדרות').getRange('A3').setValue('כותבים את קוד אנשי המנהלה בתא B1. רק מי שיודע אותו רואה את כל התזכורות של היחידה.');
+  ss.getSheetByName('הגדרות').appendRow(['מפתח התראות', Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '')]);
+  ss.insertSheet('מנויים').appendRow(['שם', 'כתובת', 'מנוי', 'נוצר']);
+  ss.getSheetByName('הגדרות').getRange('A4').setValue('כותבים את קוד אנשי המנהלה בתא B1. רק מי שיודע אותו רואה את כל התזכורות של היחידה.');
   props.setProperty('STORE_ID', ss.getId());
   return ss;
 }

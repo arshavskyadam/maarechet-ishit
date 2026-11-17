@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>המערכת האישית שלי</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="המערכת שלי">
+<meta name="theme-color" content="#1d5fa8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Hebrew:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
@@ -153,6 +158,10 @@ table.week td.slot.note { background: var(--good-soft); }
 table.week .n { display: block; color: var(--good); font-weight: 600; }
 .empty { background: var(--surface); border: 1px dashed var(--line); border-radius: var(--r); padding: 22px; text-align: center; color: var(--muted); }
 
+/* notifications */
+.pushbtn { font: inherit; font-weight: 600; color: var(--accent); background: var(--accent-soft); border: 1px solid var(--accent); border-radius: var(--r); padding: 9px 12px; cursor: pointer; width: 100%; }
+.pushon { font-size: .85rem; color: var(--good); font-weight: 600; }
+.pushhint { font-size: .82rem; color: var(--muted); margin: 0; }
 /* HQ */
 .hqbar { background: var(--accent-soft); border: 1px solid var(--accent); border-radius: var(--r); padding: 10px 14px; display: grid; gap: 4px; }
 .hqbar b { color: var(--accent); }
@@ -307,6 +316,7 @@ body { margin: 0; }
     <h1 id="who"></h1>
     <div class="meta" id="meta"></div>
     <div><button type="button" class="switch" id="switch">החלפת מדריך</button></div>
+    <div id="pushbox"></div>
   </header>
 
   <section id="now" aria-live="polite"></section>
@@ -719,6 +729,38 @@ function startApp(DATA, TEAM) {
       });
     }).catch(function () { slot.innerHTML = '<div class="empty">אין חיבור למערכת התזכורות. נסו שוב בעוד רגע.</div>'; });
   }
+  // ---- pop-up notifications (Web Push); the hourly update sends them
+  function b64key(s) {
+    var pad = "=".repeat((4 - s.length % 4) % 4), raw = atob((s + pad).replace(/-/g, "+").replace(/_/g, "/"));
+    var out = new Uint8Array(raw.length); for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i); return out;
+  }
+  function pushSetup() {
+    var box = document.getElementById("pushbox");
+    if (!box || HQ || !API || !DATA.vapid || !("serviceWorker" in navigator)) return;
+    var ios = /iPhone|iPad|iPod/.test(navigator.userAgent), standalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+    if (!("PushManager" in window)) {
+      if (ios && !standalone) box.innerHTML = '<p class="pushhint">🔔 כדי לקבל התראות באייפון: כפתור השיתוף ⬆️ ← "הוספה למסך הבית", ואז לפתוח את האתר מהאייקון.</p>';
+      return;
+    }
+    navigator.serviceWorker.register("sw.js").then(function (reg) {
+      return reg.pushManager.getSubscription().then(function (sub) {
+        if (sub && store("push-on") === ME) { box.innerHTML = '<span class="pushon">🔔 ההתראות פעילות בטלפון הזה</span>'; return; }
+        box.innerHTML = '<button type="button" class="pushbtn" id="pushgo">🔔 הפעלת התראות לטלפון</button><p class="pushhint">סיכום בוקר, שינויים של היום, ותזכורות ותורנויות לפני שהן מתחילות.</p>';
+        document.getElementById("pushgo").onclick = function () {
+          if (!myCode()) { loginForm(box, pushSetup); return; }
+          Notification.requestPermission().then(function (perm) {
+            if (perm !== "granted") { box.innerHTML = '<p class="pushhint">ההתראות חסומות. אפשר להפעיל אותן בהגדרות הטלפון, תחת האתר הזה.</p>'; return; }
+            return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64key(DATA.vapid) }).then(function (s2) {
+              return call({ action: "subscribe", name: ME, code: myCode(), sub: s2.toJSON() });
+            }).then(function (r) {
+              if (r && r.ok) { store("push-on", ME); pushSetup(); }
+              else box.innerHTML = '<p class="pushhint">לא הצלחתי להפעיל. נסו שוב בעוד רגע.</p>';
+            });
+          }).catch(function () { box.innerHTML = '<p class="pushhint">לא הצלחתי להפעיל. נסו שוב בעוד רגע.</p>'; });
+        };
+      });
+    }).catch(function () {});
+  }
   function openNoteForm() {
     if (API && !myCode()) { loginForm(document.getElementById("noteslot"), openNoteForm); return; }
     var d = dayMap[selected];
@@ -1077,6 +1119,7 @@ function startApp(DATA, TEAM) {
 
   renderStrip(); renderDay(); renderNow();
   syncNotes();
+  pushSetup();
   getJSON("data/duty.json").then(function (d) {
     DUTY = d; renderDay();
     if (!document.getElementById("view-week").hidden) renderWeek();

@@ -245,7 +245,7 @@ def build_person(person, raw, extras, now, offline, morning):
             summary_sent = today  # only once a day, and only once it really went out
 
     write_json(path, {
-        "teacher": display, "source": CONFIG["site"], "roles": person.get("roles", []), "api": CONFIG.get("api_url", ""),
+        "teacher": display, "source": CONFIG["site"], "roles": person.get("roles", []), "api": CONFIG.get("api_url", ""), "vapid": CONFIG.get("vapid_public", ""),
         "ends_title": ("שעת סיום · שכבה " + ", ".join(person["lead_grades"])) if person.get("lead_grades")
         else ("שעת סיום · " + ("הכיתות שלי" if len(homerooms) > 1 else "הכיתה שלי") if homerooms else ""),
         "summary_sent": summary_sent, "latest": latest, "changelog": changelog,
@@ -408,6 +408,9 @@ def main():
             build_duty(raw, now, people, team_defs)
     DOCS.mkdir(exist_ok=True)
     (DOCS / "index.html").write_text((ROOT / "web" / "index.html").read_text(encoding="utf-8"), encoding="utf-8")
+    for extra in ("sw.js", "manifest.webmanifest", "icon-192.png", "icon-512.png"):
+        if (ROOT / "web" / extra).exists():
+            (DOCS / extra).write_bytes((ROOT / "web" / extra).read_bytes())
     (DOCS / ".nojekyll").write_text("")
     print(f"built {len(people)} pages at {now.isoformat(timespec='minutes')}")
 

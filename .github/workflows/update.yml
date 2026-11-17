@@ -34,6 +34,13 @@ jobs:
         env:
           NTFY_SALT: ${{ secrets.NTFY_SALT }}
         run: python3 tracker/build.py
+      - name: Send notifications
+        continue-on-error: true
+        env:
+          PUSH_TOKEN: ${{ secrets.PUSH_TOKEN }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+        run: |
+          if [ -n "$PUSH_TOKEN" ] && [ -n "$VAPID_PRIVATE_KEY" ]; then pip install -q pywebpush==2.5.0 && python3 tracker/push.py; else echo "notifications not set up"; fi
       - name: Save the result
         run: |
           git config user.name "timetable-bot"
