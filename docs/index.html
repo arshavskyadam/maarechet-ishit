@@ -175,6 +175,22 @@ table.week .n { display: block; color: var(--good); font-weight: 600; }
 .hqday h3 { font-size: 1rem; }
 .hqday .r { display: grid; grid-template-columns: 4.5em minmax(0, 1fr); gap: 2px 8px; font-size: .9rem; border-top: 1px solid var(--line); padding-top: 6px; }
 .hqday .r .who { grid-column: 2; font-size: .8rem; color: var(--muted); }
+/* monthly yard-duty report */
+.rep { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 14px; display: grid; gap: 10px; }
+.rep h3 { font-size: 1rem; margin: 0; }
+.rep .kp { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.rep .kp div { border: 1px solid var(--line); border-radius: 10px; padding: 6px; text-align: center; font-size: .75rem; color: var(--muted); }
+.rep .kp b { display: block; font-size: 1.2rem; color: var(--ink); }
+.rep .tw { overflow-x: auto; }
+.rep table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+.rep th, .rep td { padding: 6px 4px; border-bottom: 1px solid var(--line); text-align: center; white-space: nowrap; }
+.rep th { font-size: .72rem; color: var(--muted); font-weight: 600; }
+.rep td:first-child, .rep th:first-child { text-align: start; }
+.rep .why { font-size: .8rem; color: var(--warn); }
+.rep tr.off td { color: var(--warn); }
+.rep .rm { display: flex; gap: 6px; flex-wrap: wrap; }
+.rep .rm button { font: inherit; font-size: .8rem; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.rep .rm button[aria-pressed="true"] { background: var(--duty); border-color: var(--duty); color: var(--surface); }
 /* yard duty */
 .lesson.duty { border-color: var(--duty); }
 .lesson.duty .when { background: var(--duty-soft); }
@@ -389,6 +405,35 @@ body { margin: 0; }
   <footer id="foot"></footer>
 </div>
 
+<script>
+// The monthly yard-duty report of one team (for its lead and its commander). Returns "" when there is nothing yet.
+var REP_MONTHS = ["ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני", "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר"];
+function dutyReport(rep, team, month) {
+  function e(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  var months = Object.keys((rep && rep.months) || {}).filter(function (m) { return rep.months[m].teams[team]; }).sort().reverse();
+  if (!months.length) return "";
+  if (months.indexOf(month) < 0) month = months[0];
+  var t = rep.months[month].teams[team], roles = rep.lunch_roles || [];
+  var rows = Object.keys(t.people).map(function (n) { var p = t.people[n]; p.name = n; return p; }).sort(function (a, b) { return b.total - a.total; });
+  var total = rows.reduce(function (a, p) { return a + p.total; }, 0), avg = rows.length ? total / rows.length : 0;
+  var gap = rows.length ? rows[0].total - rows[rows.length - 1].total : 0;
+  var label = function (m) { return REP_MONTHS[+m.slice(5) - 1] + " " + m.slice(0, 4); };
+  var h = '<section class="rep" id="duty-report"><h3>📊 דוח תורני חצר · ' + e(team) + '</h3>' +
+    (months.length > 1 ? '<div class="rm">' + months.map(function (m) { return '<button type="button" data-rm="' + m + '" aria-pressed="' + (m === month) + '">' + label(m) + '</button>'; }).join("") + '</div>' : '<div class="muted" style="font-size:.85rem">' + label(month) + '</div>') +
+    '<div class="kp"><div><b>' + total + '</b>תורנויות</div><div><b>' + Math.round(avg) + '</b>ממוצע למדריך</div><div><b>' + gap + '</b>הפער הגדול ביותר</div></div>' +
+    '<div class="tw"><table><tr><th>מדריך</th><th>סה"כ</th><th>שעות</th>' + roles.map(function (r) { return '<th>' + e(r.split(" ").pop()) + '</th>'; }).join("") + '<th>±ממוצע</th></tr>';
+  var notes = [];
+  rows.forEach(function (p) {
+    var d = Math.round((p.total - avg) * 10) / 10, off = Math.abs(p.total - avg) > 3;
+    if (off && p.possible) notes.push(e(p.name) + ": היה פנוי ב־" + Math.round(100 * p.free / p.possible) + "% מהשעות של השכבה");
+    h += '<tr' + (off ? ' class="off"' : "") + '><td>' + e(p.name) + '</td><td><b>' + p.total + '</b></td><td>' + p.hours + '</td>' +
+      roles.map(function (r) { return '<td>' + ((p.lunch || {})[r] || 0) + '</td>'; }).join("") + '<td>' + (d > 0 ? "+" : "") + d + '</td></tr>';
+  });
+  h += '</table></div>' + (notes.length ? '<div class="why">⚠️ פער של יותר מ־3 תורנויות מהממוצע. ' + notes.join(" · ") + '</div>' : "") +
+    '<p class="muted" style="margin:0;font-size:.78rem">"שעות" = תורן חצר בזמן השיעורים; "חד\"א" ו"בשכבה" = התפקידים בהפסקה הגדולה. כל משבצת הולכת למדריך הפנוי שעשה הכי מעט תורנויות החודש (ובתיקו, למי שהיה תורן הכי מזמן). בתחילת כל חודש הספירה מתחילה מחדש, והדוחות הקודמים נשמרים כאן.</p></section>';
+  return h;
+}
+</script>
 <script>
 function startApp(DATA, TEAM) {
   "use strict";
@@ -1074,7 +1119,7 @@ function startApp(DATA, TEAM) {
       document.getElementById("duty-grades").innerHTML = "";
       document.getElementById("duty-title").textContent = "תורני חצר · היום";
       document.getElementById("duty-mine").textContent = "";
-      document.getElementById("duty-body").innerHTML = '<div class="empty">אין רשימת תורני חצר להיום. הרשימה נוצרת בעדכון של הבוקר בימי לימודים.</div>';
+      document.getElementById("duty-body").innerHTML = '<div class="empty">אין רשימת תורני חצר להיום. הרשימה נוצרת בעדכון של הבוקר בימי לימודים.</div>' + leadReport();
       return;
     }
     // Each team sees its own grades; administration staff see every grade.
@@ -1084,15 +1129,20 @@ function startApp(DATA, TEAM) {
       document.getElementById("duty-grades").innerHTML = "";
       document.getElementById("duty-title").textContent = "תורני חצר · היום";
       document.getElementById("duty-mine").textContent = "";
-      document.getElementById("duty-body").innerHTML = '<div class="empty">רשימת תורני החצר מוצגת לצוות של כל שכבה.</div>';
+      document.getElementById("duty-body").innerHTML = '<div class="empty">רשימת תורני החצר מוצגת לצוות של כל שכבה.</div>' + leadReport();
       return;
     }
     if (!DT.grade || !day[DT.grade]) DT.grade = mine.length ? mine[0].grade : grades[0];
     document.getElementById("duty-grades").innerHTML = grades.map(function (g) { return '<button type="button" data-grade="' + g + '" aria-pressed="' + (g === DT.grade) + '">' + g + "'</button>"; }).join("");
     document.getElementById("duty-title").textContent = "תורני חצר · שכבה " + DT.grade + "' · היום " + dm(todayISO);
     document.getElementById("duty-mine").textContent = mine.length ? "לך יש " + mine.length + " תורנויות היום" : "";
-    document.getElementById("duty-body").innerHTML = dutyRows(day[DT.grade], ME) + '<p class="muted" style="margin:0;font-size:.8rem">הרשימה נבנית כל בוקר מהמערכת של כל הצוות: רק מי שפנוי באותה שעה, ובחלוקה שווה. אם מישהו מקבל שיעור, הוא מוחלף לבד בעדכון הבא.</p>';
+    document.getElementById("duty-body").innerHTML = dutyRows(day[DT.grade], ME) + '<p class="muted" style="margin:0;font-size:.8rem">הרשימה נבנית כל בוקר מהמערכת של כל הצוות: רק מי שפנוי באותה שעה, ובחלוקה שווה לפי טבלת צדק חודשית. אם מישהו מקבל שיעור, הוא מוחלף לבד בעדכון הבא.</p>' + leadReport();
   }
+  // Team leads see their team's monthly report under the list.
+  var REP = null, REPM = null;
+  function leadReport() { return TEAM && REP ? dutyReport(REP, TEAM.name, REPM) : ""; }
+  if (TEAM) getJSON("data/duty_reports.json").then(function (r) { REP = r; if (!document.getElementById("view-duty").hidden) renderDuty(); }).catch(function () {});
+  document.getElementById("duty-body").addEventListener("click", function (e) { var b = e.target.closest("button[data-rm]"); if (!b) return; REPM = b.getAttribute("data-rm"); renderDuty(); });
   document.getElementById("duty-grades").addEventListener("click", function (e) { var b = e.target.closest("button[data-grade]"); if (!b) return; DT.grade = b.getAttribute("data-grade"); renderDuty(); });
   document.getElementById("duty-strip").addEventListener("click", function (e) { var b = e.target.closest("button[data-date]"); if (!b) return; DT.day = b.getAttribute("data-date"); renderDuty(); });
 
@@ -1221,7 +1271,7 @@ function startApp(DATA, TEAM) {
     var BIG = /מילוי מקום|לא מתקיים|נוסף|ביטול|כיתת חינוך/;
     function draw() {
       var h = '<div class="hqbar"><b>🎖️ ' + esc(team.commander) + ' · מפקד ' + esc(team.name) + '</b><span>היום ' + today.slice(8, 10) + "." + today.slice(5, 7) + '</span><div id="cmd-push" class="btns"></div></div>' +
-        '<div class="clspick"><div class="g gr">' + [["duty", "תורני חצר"], ["rem", "תזכורות הצוות"], ["chg", "שינויים היום"]].map(function (t) {
+        '<div class="clspick"><div class="g gr">' + [["duty", "תורני חצר"], ["rep", "📊 דוח חודשי"], ["rem", "תזכורות הצוות"], ["chg", "שינויים היום"]].map(function (t) {
           return '<button type="button" data-t="' + t[0] + '" aria-pressed="' + (t[0] === state.tab) + '">' + t[1] + '</button>';
         }).join("") + '</div></div>';
       if (state.tab === "duty") {
@@ -1234,6 +1284,9 @@ function startApp(DATA, TEAM) {
             return '<details class="crow drow' + (lunch ? " lunch" : "") + '"><summary><span class="hr">' + (lunch ? "" : sl.hour) + '</span><span class="tm">' + (lunch ? "13:00" : HQH[sl.hour] || "") + '</span><span class="sb">' + (lunch ? "הפסקה גדולה · " + esc(sl.role) : "תורן חצר") + '</span><span class="who">' + who + '</span></summary></details>';
           }).join("") + '</div>';
         }).join("") : '<div class="empty">אין רשימת תורני חצר להיום.</div>';
+      } else if (state.tab === "rep") {
+        if (!state.rep) h += '<p class="muted">טוען…</p>';
+        else h += dutyReport(state.rep, team.name, state.rm) || '<div class="empty">הדוח יופיע אחרי יום התורנויות הראשון של החודש.</div>';
       } else if (state.tab === "rem") {
         if (!api) h += '<div class="empty">התזכורות יופיעו כשהמנוע יופעל.</div>';
         else if (!state.rem) h += '<p class="muted">טוען…</p>';
@@ -1251,10 +1304,12 @@ function startApp(DATA, TEAM) {
       }
       box.innerHTML = h + '<button type="button" class="hqbtn" id="cmd-out">יציאה</button>';
       box.querySelector(".gr").onclick = function (e) { var b = e.target.closest("button[data-t]"); if (b) { state.tab = b.getAttribute("data-t"); draw(); } };
+      var rp = document.getElementById("duty-report"); if (rp) rp.onclick = function (e) { var b = e.target.closest("button[data-rm]"); if (b) { state.rm = b.getAttribute("data-rm"); draw(); } };
       document.getElementById("cmd-out").onclick = function () { set("cmd", null); location.reload(); };
       cmdPush(api, team, code);
     }
     json("data/duty.json").then(function (x) { state.duty = x; draw(); }).catch(draw);
+    json("data/duty_reports.json").then(function (x) { state.rep = x; draw(); }).catch(function () { state.rep = {}; draw(); });
     if (api) fetch(api, { method: "POST", body: JSON.stringify({ action: "cmd_team", code: code, team: team.name }) }).then(function (r) { return r.json(); })
       .then(function (r) { state.rem = r.ok ? r.reminders : []; draw(); }).catch(function () { state.rem = []; draw(); });
     Promise.all(team.members.map(function (m) {
