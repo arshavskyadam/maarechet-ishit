@@ -19,4 +19,6 @@ jobs:
           echo "hq (wrong code):"; curl -sSL -m 60 -H "Content-Type: text/plain" -d '{"action":"hq","code":"0"}' "$API"; echo
           echo "commander (wrong code):"; curl -sSL -m 60 -H "Content-Type: text/plain" -d '{"action":"cmd_team","code":"0","team":"צוות ט"}' "$API"; echo
           echo "hq (wrong code) should not list reminders:"; curl -sSL -m 60 -H "Content-Type: text/plain" -d '{"action":"hq","code":"0"}' "$API"; echo
+          echo "duty edits today:"; curl -sSL -m 60 -H "Content-Type: text/plain" -d "{\"action\":\"duty_get\",\"date\":\"$(TZ=Asia/Jerusalem date +%F)\"}" "$API"; echo
+          echo "duty edit (wrong code):"; curl -sSL -m 60 -H "Content-Type: text/plain" -d '{"action":"duty_set","code":"0","date":"2026-01-01","grade":"ט","hour":1,"role":""}' "$API"; echo
           echo "feed (wrong token):"; curl -sSL -m 60 -H "Content-Type: text/plain" -d '{"action":"push_feed","token":"x"}' "$API"; echo
