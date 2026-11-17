@@ -15,6 +15,7 @@
   --accent: #1d5fa8; --accent-soft: #e2ecf8; --accent-ink: #ffffff;
   --warn: #9a5800; --warn-soft: #fbefd8; --bad: #b3261e; --bad-soft: #f9e2e0;
   --good: #23753f; --good-soft: #e1f3e6;
+  --duty: #6a3ea1; --duty-soft: #efe6fa;
   --font-body: "IBM Plex Sans Hebrew", "Segoe UI", Arial, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
   --r: 10px;
@@ -22,11 +23,11 @@
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #0f151b; --surface: #17212a; --ink: #e5ebf0; --muted: #94a2ae; --line: #2a3641;
   --accent: #7db4f0; --accent-soft: #1a2d43; --accent-ink: #0f151b;
-  --warn: #f0b45c; --warn-soft: #3a2a12; --bad: #f28b82; --bad-soft: #3d1e1c; --good: #7fd19b; --good-soft: #163222; color-scheme: dark } }
+  --warn: #f0b45c; --warn-soft: #3a2a12; --bad: #f28b82; --bad-soft: #3d1e1c; --good: #7fd19b; --good-soft: #163222; --duty: #c9a6f5; --duty-soft: #2a1f3d; color-scheme: dark } }
 :root[data-theme="dark"] {
   --bg: #0f151b; --surface: #17212a; --ink: #e5ebf0; --muted: #94a2ae; --line: #2a3641;
   --accent: #7db4f0; --accent-soft: #1a2d43; --accent-ink: #0f151b;
-  --warn: #f0b45c; --warn-soft: #3a2a12; --bad: #f28b82; --bad-soft: #3d1e1c; --good: #7fd19b; --good-soft: #163222; color-scheme: dark }
+  --warn: #f0b45c; --warn-soft: #3a2a12; --bad: #f28b82; --bad-soft: #3d1e1c; --good: #7fd19b; --good-soft: #163222; --duty: #c9a6f5; --duty-soft: #2a1f3d; color-scheme: dark }
 
 * { box-sizing: border-box }
 /* 16px stops iPhone from zooming in when a field is tapped */
@@ -152,6 +153,19 @@ table.week td.slot.note { background: var(--good-soft); }
 table.week .n { display: block; color: var(--good); font-weight: 600; }
 .empty { background: var(--surface); border: 1px dashed var(--line); border-radius: var(--r); padding: 22px; text-align: center; color: var(--muted); }
 
+/* yard duty */
+.lesson.duty { border-color: var(--duty); }
+.lesson.duty .when { background: var(--duty-soft); }
+.lesson.duty .when .per { color: var(--duty); }
+.duty-tag { display: inline-block; padding: 1px 8px; border-radius: 999px; background: var(--duty-soft); color: var(--duty); font-weight: 600; font-size: .78rem; }
+table.week .d { display: block; color: var(--duty); font-weight: 600; }
+.drow summary { cursor: default; }
+.drow .who { grid-column: 3; display: flex; flex-wrap: wrap; gap: 4px; }
+.drow .who span { padding: 1px 9px; border-radius: 999px; background: var(--duty-soft); color: var(--duty); font-weight: 600; font-size: .85rem; }
+.drow .who span.me { background: var(--duty); color: var(--surface); }
+.drow .who em { font-style: normal; color: var(--bad); font-weight: 600; font-size: .85rem; }
+.drow.lunch { background: var(--duty-soft); }
+.drow.lunch .hr { font-size: .75rem; }
 /* classes tab */
 .clspick { display: grid; gap: 6px; }
 .clspick .g { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
@@ -288,6 +302,7 @@ body { margin: 0; }
     <button role="tab" id="tab-day" aria-selected="true" data-view="day">לפי יום</button>
     <button role="tab" id="tab-week" aria-selected="false" data-view="week">שבוע מלא</button>
     <button role="tab" id="tab-cls" aria-selected="false" data-view="cls">כיתות</button>
+    <button role="tab" id="tab-duty" aria-selected="false" data-view="duty">תורנויות</button>
     <button role="tab" id="tab-agenda" aria-selected="false" data-view="agenda">מבחנים ואירועים</button>
     <button role="tab" id="tab-hist" aria-selected="false" data-view="hist">יומן</button>
     <button role="tab" id="tab-team" aria-selected="false" data-view="team" hidden>זמן לצוות</button>
@@ -319,6 +334,13 @@ body { margin: 0; }
     </div>
     <div class="strip" id="cls-strip" aria-label="בחירת יום"></div>
     <div id="cls-body"><p class="muted">טוען…</p></div>
+  </section>
+
+  <section id="view-duty" hidden style="display:grid; grid-template-columns:minmax(0,1fr); gap:12px">
+    <div class="clspick"><div class="g gr" id="duty-grades"></div></div>
+    <div class="dayhead"><h2 id="duty-title"></h2><span class="muted" id="duty-mine"></span></div>
+    <div class="strip" id="duty-strip" aria-label="בחירת יום"></div>
+    <div id="duty-body"><p class="muted">טוען…</p></div>
   </section>
 
   <section id="view-agenda" hidden style="display:grid; grid-template-columns:minmax(0,1fr); gap:10px">
@@ -369,6 +391,24 @@ function startApp(DATA, TEAM) {
     return '<article class="lesson note"><div class="when"><span class="per">שעה ' + n.hour + '</span><span class="t">' + esc(hh[1]) + '</span><span class="t2">עד ' + esc(hh[2]) + '</span></div>' +
       '<div class="what"><h3>' + esc(n.text) + '</h3><div class="row"><span class="note-tag">תזכורת אישית</span><span class="muted">' + (n.date ? "פעם אחת" : "כל שבוע") + '</span>' +
       '<button type="button" class="note-del" data-del="' + esc(n.id) + '">מחיקה</button></div></div></article>';
+  }
+  // ---- yard duty, built each hour from everyone's timetable
+  var DUTY = null, ME = DATA.teacher || "";
+  function dutyOn(iso) {
+    var out = [], day = DUTY && DUTY.days[iso];
+    if (!day) return out;
+    Object.keys(day).forEach(function (g) {
+      day[g].slots.forEach(function (sl) {
+        if (sl.people.indexOf(ME) >= 0) out.push({ grade: g, hour: sl.hour, role: sl.role || "", others: sl.people.filter(function (x) { return x !== ME; }) });
+      });
+    });
+    return out;
+  }
+  function dutyCard(d) {
+    var lunch = !!d.role, hh = lunch ? ["", "13:00", "13:40"] : (NH[d.hour] || [d.hour, "", ""]);
+    return '<article class="lesson duty"><div class="when"><span class="per">' + (lunch ? "הפסקה" : "שעה " + d.hour) + '</span><span class="t">' + hh[1] + '</span><span class="t2">עד ' + hh[2] + '</span></div>' +
+      '<div class="what"><h3>' + (lunch ? esc(d.role) : "תורן חצר") + ' · שכבה ' + esc(d.grade) + "'</h3>" +
+      '<div class="row"><span class="duty-tag">תורנות</span>' + (d.others.length ? '<span class="muted">יחד עם ' + esc(d.others.join(", ")) + '</span>' : "") + '</div></div></article>';
   }
   var todayISO = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jerusalem" }).format(new Date());
   var hourNow = +new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Jerusalem", hour: "2-digit", hour12: false }).format(new Date());
@@ -596,6 +636,7 @@ function startApp(DATA, TEAM) {
     document.getElementById("dayagenda").innerHTML = ctx.length ? '<div class="daydate">גם היום בכיתות שלך</div>' + ctx.map(function (a) { return agItem(a, false); }).join("") : "";
     var items = blocks(list).map(function (b) { return { h: b.firstHour, html: card(b) }; })
       .concat(notesOn(selected).map(function (n) { return { h: n.hour + 0.5, html: noteCard(n) }; }))
+      .concat(dutyOn(selected).map(function (d) { return { h: d.hour + 0.2, html: dutyCard(d) }; }))
       .sort(function (a, b) { return a.h - b.h; });
     document.getElementById("daylist").innerHTML = (items.length ? items.map(function (i) { return i.html; }).join("") : '<div class="empty">אין לך שיעורים ביום הזה.</div>') +
       '<div id="noteslot"><button type="button" class="addnote" id="addnote">＋ תזכורת אישית ליום הזה</button></div>';
@@ -665,7 +706,9 @@ function startApp(DATA, TEAM) {
         var all = inWeek.filter(function (l) { return l.date === d.date && l.hour === hr; });
         var here = all.filter(match);
         var mine = notesOn(d.date).filter(function (n) { return n.hour === hr; });
-        var nh = mine.map(function (n) { return '<span class="n">● ' + esc(n.text) + '</span>'; }).join("");
+        var nh = mine.map(function (n) { return '<span class="n">● ' + esc(n.text) + '</span>'; }).join("") +
+          dutyOn(d.date).filter(function (x) { return x.hour === hr || (x.role && hr === 6); }).map(function (x) { return '<span class="d">◆ ' + (x.role ? esc(x.role) : "תורן חצר") + '</span>'; }).join("");
+        if (nh && !mine.length) mine = [1];
         if (!here.length && mine.length) { h += '<td class="slot note" data-date="' + d.date + '">' + nh + '</td>'; return; }
         if (!all.length) { h += '<td></td>'; return; }
         if (!here.length) { h += '<td class="dim">' + all.map(function (l) { return esc(l.classes.join(", ")); }).join("<br>") + '</td>'; return; }
@@ -868,9 +911,41 @@ function startApp(DATA, TEAM) {
     var td = e.target.closest("table.cweek td[data-date]"); if (!td) return; CL.day = td.getAttribute("data-date"); CL.mode = "day"; renderCls();
   });
 
+  // ---- duty tab: one grade's list per day
+  var DT = { grade: null, day: null };
+  function renderDuty() {
+    if (!DUTY) { document.getElementById("duty-body").innerHTML = '<div class="empty">רשימות התורנות יופיעו אחרי העדכון הבא.</div>'; return; }
+    var dates = Object.keys(DUTY.days).filter(function (d) { return d >= todayISO; }).sort();
+    if (!dates.length) { document.getElementById("duty-body").innerHTML = '<div class="empty">אין רשימות לימים הקרובים.</div>'; return; }
+    if (!DT.day || dates.indexOf(DT.day) < 0) DT.day = dates.indexOf(selected) >= 0 ? selected : dates[0];
+    var grades = ["ט", "י", "יא", "יב", "יג", "יד"].filter(function (g) { return dates.some(function (d) { return DUTY.days[d][g]; }); });
+    if (!DT.grade) {
+      var mineG = {}; dates.forEach(function (d) { dutyOn(d).forEach(function (x) { mineG[x.grade] = (mineG[x.grade] || 0) + 1; }); });
+      DT.grade = Object.keys(mineG).sort(function (a, b) { return mineG[b] - mineG[a]; })[0] || grades[0];
+    }
+    document.getElementById("duty-grades").innerHTML = grades.map(function (g) { return '<button type="button" data-grade="' + g + '" aria-pressed="' + (g === DT.grade) + '">' + g + "'</button>"; }).join("");
+    var mineN = 0; dates.forEach(function (d) { mineN += dutyOn(d).length; });
+    document.getElementById("duty-title").textContent = "תורני חצר · שכבה " + DT.grade + "'";
+    document.getElementById("duty-mine").textContent = mineN ? "לך יש " + mineN + " תורנויות בימים הקרובים" : "";
+    document.getElementById("duty-strip").innerHTML = dates.map(function (d) {
+      var mine = dutyOn(d).length;
+      return '<button type="button" data-date="' + d + '" aria-pressed="' + (d === DT.day) + '"' + (d === todayISO ? ' class="today"' : "") + '><span class="wd">' + esc(new Intl.DateTimeFormat("he-IL", { weekday: "long" }).format(new Date(d + "T12:00:00")).replace("יום ", "")) + '</span><span class="dm">' + dm(d) + '</span><span class="n">' + (mine ? mine + " שלך" : "&nbsp;") + '</span></button>';
+    }).join("");
+    var g = DUTY.days[DT.day][DT.grade];
+    if (!g) { document.getElementById("duty-body").innerHTML = '<div class="empty">לשכבה אין לימודים ביום הזה.</div>'; return; }
+    var rows = g.slots.map(function (sl) {
+      var lunch = !!sl.role, t = lunch ? "13:00" : (NH[sl.hour] ? NH[sl.hour][1] : "");
+      var who = sl.people.length ? sl.people.map(function (x) { return '<span' + (x === ME ? ' class="me"' : "") + '>' + esc(x) + '</span>'; }).join("") : '<em>אין מדריך פנוי</em>';
+      return '<details class="crow drow' + (lunch ? " lunch" : "") + '"><summary><span class="hr">' + (lunch ? "הפסקה" : sl.hour) + '</span><span class="tm">' + t + '</span><span class="sb">' + (lunch ? esc(sl.role) : "תורן חצר") + '</span><span class="who">' + who + '</span></summary></details>';
+    }).join("");
+    document.getElementById("duty-body").innerHTML = '<div class="crows">' + rows + '</div><p class="muted" style="margin:0;font-size:.8rem">הרשימה נבנית אוטומטית מהמערכת של כל הצוות: רק מי שפנוי באותה שעה, ובחלוקה שווה. אם מישהו מקבל שיעור, הוא מוחלף לבד בעדכון הבא.</p>';
+  }
+  document.getElementById("duty-grades").addEventListener("click", function (e) { var b = e.target.closest("button[data-grade]"); if (!b) return; DT.grade = b.getAttribute("data-grade"); renderDuty(); });
+  document.getElementById("duty-strip").addEventListener("click", function (e) { var b = e.target.closest("button[data-date]"); if (!b) return; DT.day = b.getAttribute("data-date"); renderDuty(); });
+
   // ---- tabs
   function show(view) {
-    ["day", "week", "cls", "agenda", "hist", "team"].forEach(function (v) {
+    ["day", "week", "cls", "duty", "agenda", "hist", "team"].forEach(function (v) {
       document.getElementById("view-" + v).hidden = v !== view;
       document.getElementById("tab-" + v).setAttribute("aria-selected", String(v === view));
     });
@@ -880,15 +955,21 @@ function startApp(DATA, TEAM) {
     if (view === "agenda") renderAgenda();
     if (view === "team") renderTeam();
     if (view === "cls") renderCls();
+    if (view === "duty") renderDuty();
   }
   document.querySelector(".tabs").addEventListener("click", function (e) {
     var b = e.target.closest("button[data-view]"); if (b) show(b.getAttribute("data-view"));
   });
 
   renderStrip(); renderDay(); renderNow();
+  getJSON("data/duty.json").then(function (d) {
+    DUTY = d; renderDay();
+    if (!document.getElementById("view-week").hidden) renderWeek();
+    if (!document.getElementById("view-duty").hidden) renderDuty();
+  }).catch(function () {});
   setInterval(renderNow, 60000);
   var saved = store("view");
-  if (saved === "week" || saved === "hist" || saved === "agenda" || saved === "cls" || (saved === "team" && TEAM)) show(saved);
+  if (saved === "week" || saved === "hist" || saved === "agenda" || saved === "cls" || saved === "duty" || (saved === "team" && TEAM)) show(saved);
 }
 
 (function () {

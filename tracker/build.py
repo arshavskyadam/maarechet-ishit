@@ -261,6 +261,75 @@ def build_person(person, raw, extras, now, offline, morning):
     return entry
 
 
+LUNCH_ROLES = ["לוקח לחד\"א", "נשאר בשכבה"]
+
+
+def build_duty(raw, now, people, team_defs):
+    """Yard duty per grade: one free team member for every period the grade is in class, and after
+    period 6 the lunch break with two roles. Kept stable through the day: someone who stays free keeps
+    the slot; a slot whose person became busy is handed to the free member with the fewest duties."""
+    today = now.date().isoformat()
+    path = DOCS / "data" / "duty.json"
+    prev = load_json(path, {}).get("days", {})
+    busy = {}
+    for person in people:
+        data = load_json(DOCS / "data" / f"{person['id']}.json", {})
+        for l in data.get("latest", {}).get("lessons", []):
+            if l.get("status") != "cancelled" and l.get("hour") is not None:
+                busy.setdefault(person["name"], set()).add((l["date"], l["hour"]))
+    known = {p["name"] for p in people}
+    dates = sorted(d for d in raw["days"] if d >= today and datetime.fromisoformat(d).weekday() in (6, 0, 1, 2, 3))
+    grade_hours = {}
+    for (date, hour), entries in raw["slots"].items():
+        if hour is None:
+            continue
+        for name, cell in entries:
+            if cell["lessons"]:
+                grade_hours.setdefault((date, grade_of(name)), set()).add(hour)
+    count = {}
+    days = {d: v for d, v in prev.items() if d < today and d >= (now.date() - timedelta(days=14)).isoformat()}
+
+    def pick(cands, date, key, taken):
+        free = [c for c in cands if c not in taken]
+        free.sort(key=lambda c: (count.get(c, 0), hashlib.sha1(f"{c}|{date}|{key}".encode()).hexdigest()))
+        return free[0] if free else None
+
+    for date in dates:
+        day_out, taken_at = {}, {}
+        for team, t in team_defs.items():
+            members = [m for m in t.get("members", []) if m in known]
+            if not members:
+                continue
+            for grade in t.get("grades", []):
+                hours = sorted(grade_hours.get((date, grade), ()))
+                if not hours:
+                    continue
+                old = {(s["hour"], s.get("role", "")): s["people"] for s in prev.get(date, {}).get(grade, {}).get("slots", [])}
+                slots = []
+                wanted = [(h, "") for h in hours if h >= 1]
+                if any(h >= 7 for h in hours):
+                    wanted.append((6.5, LUNCH_ROLES[0]))
+                    wanted.append((6.5, LUNCH_ROLES[1]))
+                for h, role in wanted:
+                    taken = taken_at.setdefault(h, set())
+                    if role:
+                        cands = [m for m in members]  # the whole team is out of class during the break
+                    else:
+                        cands = [m for m in members if (date, h) not in busy.get(m, set())]
+                    keep = [x for x in old.get((h, role), []) if x in cands and x not in taken]
+                    chosen = keep[:1] or [x for x in [pick(cands, date, f"{grade}{h}{role}", taken)] if x]
+                    for c in chosen:
+                        taken.add(c)
+                        count[c] = count.get(c, 0) + 1
+                    slot = {"hour": h, "people": chosen}
+                    if role:
+                        slot["role"] = role
+                    slots.append(slot)
+                day_out[grade] = {"team": team, "slots": sorted(slots, key=lambda x: x["hour"])}
+        days[date] = day_out
+    write_json(path, {"updated": now.isoformat(timespec="minutes"), "lunch_roles": LUNCH_ROLES, "days": days})
+    print(f"duty lists for {len(dates)} days")
+
 def class_id(class_name):
     return hashlib.sha1(class_name.encode("utf-8")).hexdigest()[:8]
 
@@ -334,6 +403,8 @@ def main():
                 teams.append({"name": team_name, "lead": by_name[t["lead"]], "members": members})
         write_json(DOCS / "data" / "staff.json",
                    {"updated": now.isoformat(timespec="minutes"), "people": people, "teams": teams})
+        if raw:
+            build_duty(raw, now, people, team_defs)
     DOCS.mkdir(exist_ok=True)
     (DOCS / "index.html").write_text((ROOT / "web" / "index.html").read_text(encoding="utf-8"), encoding="utf-8")
     (DOCS / ".nojekyll").write_text("")
