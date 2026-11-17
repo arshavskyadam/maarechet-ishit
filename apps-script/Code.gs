@@ -154,13 +154,23 @@ function dutyGet(req) {
 }
 
 function dutySet(req) {
-  var code = String(req.code || '').trim();
-  var ok = [setting('קוד מפקדים'), setting('קוד אנשי מנהלה')].some(function (w) { return w && code === String(w); });
-  if (!ok) { Utilities.sleep(800); return { ok: false, error: 'wrong code' }; }
   var date = String(req.date || ''), grade = clean(req.grade), hour = Number(req.hour), role = clean(req.role).slice(0, 30);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || GRADES.indexOf(grade) < 0 || !(hour >= 0 && hour <= 12)) return { ok: false, error: 'bad slot' };
+  var staff = staffList();
+  // Team leads, commanders and administration use their code; any other staff member edits from the
+  // phone linked to them, and only the grades of their own team.
+  var code = String(req.code || '').trim();
+  var ok = code && [setting('קוד מפקדים'), setting('קוד אנשי מנהלה')].some(function (w) { return w && code === String(w); });
+  if (!ok && !code && req.name && req.token) {
+    var name = clean(req.name), me = staff.filter(function (p) { return p.name === name; })[0];
+    var dev = ensureSheet('מכשירים', ['שם', 'מפתח מכשיר', 'קושר']), row = findRow(dev, 1, name);
+    if (!me || row < 1 || String(dev.getRange(row, 2).getValue()) !== String(req.token)) { Utilities.sleep(800); return { ok: false, error: 'not this phone' }; }
+    if (teamGrades(me.team).indexOf(grade) < 0) return { ok: false, error: 'not your team' };
+    ok = true;
+  }
+  if (!ok) { Utilities.sleep(800); return { ok: false, error: 'wrong code' }; }
   var person = clean(req.person);
-  if (person && !staffList().some(function (p) { return p.name === person; })) return { ok: false, error: 'unknown name' };
+  if (person && !staff.some(function (p) { return p.name === person; })) return { ok: false, error: 'unknown name' };
   var tab = ensureSheet('תורנויות ידניות', DUTY_HEAD);
   var rows = tab.getDataRange().getDisplayValues();
   for (var i = rows.length - 1; i >= 1; i--) {
@@ -173,6 +183,19 @@ function dutySet(req) {
 }
 
 // ---- data
+
+function teamGrades(team) {
+  var tab = SpreadsheetApp.openById(SHEET_ID).getSheetByName('צוותים');
+  if (!tab || !team) return [];
+  var rows = tab.getDataRange().getValues(), head = rows.shift();
+  var n = head.indexOf('שם הצוות'), g = head.indexOf('שכבות');
+  for (var i = 0; i < rows.length; i++) {
+    if (String(rows[i][n]).trim() === team) {
+      return String(rows[i][g] || '').replace(/['"׳״]/g, '').split(/[,\s]+/).filter(function (x) { return x; });
+    }
+  }
+  return [];
+}
 
 function staffList() {
   var tab = SpreadsheetApp.openById(SHEET_ID).getSheetByName(STAFF_TAB);

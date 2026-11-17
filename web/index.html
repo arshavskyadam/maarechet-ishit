@@ -452,7 +452,8 @@ function dutySlots(grade, g, me, edit) {
       (edit ? '<div class="dedit-slot"></div>' : "") + '</details>';
   }).join("") + '</div>';
 }
-// ctx: { api, date, duty, by, code: function () -> saved code or "", saveCode: function (code), redraw: function () }
+// ctx: { api, date, duty, by, code: function () -> saved code or "", saveCode: function (code), redraw: function (),
+//        device: function () -> { name, token } of the phone's linked person or null, askCode: show a code field }
 function dutyBind(box, ctx) {
   box.querySelectorAll("details.drow.edit").forEach(function (det) {
     det.addEventListener("toggle", function () {
@@ -461,15 +462,16 @@ function dutyBind(box, ctx) {
       var g = ctx.duty.days[ctx.date][grade], sl = g.slots.filter(function (x) { return Number(x.hour) === hour && (x.role || "") === role; })[0];
       var free = role ? (g.members || []) : ((g.free_at || {})[String(hour)] || []);
       var others = (g.members || []).filter(function (m) { return free.indexOf(m) < 0; });
-      var cur = sl.people[0] || "", code = ctx.code();
+      var cur = sl.people[0] || "", code = ctx.code(), dev = !code && ctx.device ? ctx.device() : null;
       var opt = function (m, tag) { return '<option value="' + dEsc(m) + '"' + (m === cur ? " selected" : "") + '>' + dEsc(m) + (tag ? " · " + tag : "") + '</option>'; };
       if (cur && (g.members || []).indexOf(cur) < 0) others.push(cur);
       var h = '<form class="dedit">' +
         '<label>מי תורן<select name="p"><option value=""' + (cur ? "" : " selected") + '>— אף אחד —</option>' + free.map(function (m) { return opt(m, role ? "" : "פנוי"); }).join("") + others.map(function (m) { return opt(m, "בשיעור"); }).join("") + '</select></label>' +
         '<label>הערה</label><div class="chips">' + DUTY_NOTES.map(function (n) { return '<button type="button" data-n="' + n + '" aria-pressed="' + (sl.note === n) + '">' + n + '</button>'; }).join("") + '</div>' +
         '<input name="n" type="text" maxlength="40" placeholder="או הערה אחרת" value="' + dEsc(sl.manual && DUTY_NOTES.indexOf(sl.note) < 0 ? sl.note || "" : "") + '">' +
-        (code ? "" : '<label>קוד (כמו של ראשי הצוותים)<input name="c" type="password" inputmode="numeric" autocomplete="off"></label>') +
-        '<div class="acts"><button type="submit" class="save">שמירה</button>' + (sl.manual ? '<button type="button" data-clear="1">החזרה לחלוקה האוטומטית</button>' : "") + '</div><p class="err"></p></form>';
+        (code || dev ? "" : ctx.askCode ? '<label>קוד (כמו של ראשי הצוותים)<input name="c" type="password" inputmode="numeric" autocomplete="off"></label>' :
+          '<p class="err" style="color:var(--muted)">כדי לשנות, קודם מקשרים את הטלפון: בדף שלך לוחצים "🔔 הפעלת התראות וקישור הטלפון".</p>') +
+        '<div class="acts"><button type="submit" class="save"' + (code || dev || ctx.askCode ? "" : " disabled") + '>שמירה</button>' + (sl.manual ? '<button type="button" data-clear="1">החזרה לחלוקה האוטומטית</button>' : "") + '</div><p class="err"></p></form>';
       var holder = det.querySelector(".dedit-slot"); holder.innerHTML = h;
       var form = holder.querySelector("form"), note = sl.manual && DUTY_NOTES.indexOf(sl.note) >= 0 ? sl.note : "";
       form.querySelector(".chips").onclick = function (e) {
@@ -480,13 +482,17 @@ function dutyBind(box, ctx) {
       };
       function send(action) {
         var c = code || (form.c ? form.c.value.trim() : "");
-        if (!c) { form.querySelector(".err").textContent = "צריך קוד."; return; }
+        if (!c && !dev) { form.querySelector(".err").textContent = "צריך קוד."; return; }
         if (!ctx.api) { form.querySelector(".err").textContent = "המנוע לא מחובר."; return; }
         form.querySelector(".err").textContent = "שומר…";
-        fetch(ctx.api, { method: "POST", body: JSON.stringify({ action: action, code: c, date: ctx.date, grade: grade, hour: hour, role: role,
+        fetch(ctx.api, { method: "POST", body: JSON.stringify({ action: action, code: c, name: dev && !c ? dev.name : "", token: dev && !c ? dev.token : "", date: ctx.date, grade: grade, hour: hour, role: role,
           person: form.p.value, note: form.n.value.trim() || note, by: ctx.by || "" }) }).then(function (r) { return r.json(); }).then(function (r) {
-          if (!r.ok) { form.querySelector(".err").textContent = r.error === "wrong code" ? "הקוד לא נכון." : "לא נשמר. נסו שוב."; if (r.error === "wrong code") ctx.saveCode(null); return; }
-          ctx.saveCode(c);
+          if (!r.ok) {
+            form.querySelector(".err").textContent = r.error === "wrong code" ? "הקוד לא נכון." : r.error === "not your team" ? "אפשר לשנות רק את התורנויות של הצוות שלך." :
+              r.error === "not this phone" ? "הטלפון הזה כבר לא מקושר. מקשרים מחדש דרך \"הפעלת התראות וקישור הטלפון\"." : "לא נשמר. נסו שוב.";
+            if (r.error === "wrong code") ctx.saveCode(null); return;
+          }
+          if (c) ctx.saveCode(c);
           if (action === "duty_set") { sl.people = form.p.value ? [form.p.value] : []; sl.manual = true; sl.note = form.n.value.trim() || note; sl.by = ctx.by || ""; }
           return dutyEdits(ctx.api, ctx.date).then(function (edits) {
             if (action === "duty_clear") { sl.manual = false; sl.note = ""; }
@@ -1225,9 +1231,11 @@ function startApp(DATA, TEAM) {
     document.getElementById("duty-title").textContent = "תורני חצר · שכבה " + DT.grade + "' · היום " + dm(todayISO);
     document.getElementById("duty-mine").textContent = mine.length ? "לך יש " + mine.length + " תורנויות היום" : "";
     var body = document.getElementById("duty-body");
-    body.innerHTML = dutySlots(DT.grade, day[DT.grade], ME, !!(TEAM || DATA.hq)) + '<p class="muted" style="margin:0;font-size:.8rem">הרשימה נבנית כל בוקר מהמערכת של כל הצוות: רק מי שפנוי באותה שעה, ובחלוקה שווה לפי טבלת צדק חודשית. אם מישהו מקבל שיעור, הוא מוחלף לבד בעדכון הבא.' + (TEAM ? ' ראש הצוות יכול ללחוץ על שורה ולשנות אותה ידנית.' : "") + '</p>' + leadReport();
-    if (TEAM || DATA.hq) dutyBind(body, { api: API, date: todayISO, duty: DUTY, by: DATA.teacher || "", redraw: renderDuty,
-      code: function () { return (DATA.hq && DATA.hq.code) || dGet("duty-code") || ""; }, saveCode: function (c) { dSet("duty-code", c); } });
+    body.innerHTML = dutySlots(DT.grade, day[DT.grade], ME, !!API) + '<p class="muted" style="margin:0;font-size:.8rem">הרשימה נבנית כל בוקר מהמערכת של כל הצוות: רק מי שפנוי באותה שעה, ובחלוקה שווה לפי טבלת צדק חודשית. אם מישהו מקבל שיעור, הוא מוחלף לבד בעדכון הבא.' + (API ? ' כל אחד מהצוות יכול ללחוץ על שורה ולשנות אותה ידנית, למשל כשמישהו בשמירות.' : "") + '</p>' + leadReport();
+    if (API) dutyBind(body, { api: API, date: todayISO, duty: DUTY, redraw: renderDuty, askCode: !!(TEAM || DATA.hq),
+      by: DATA.hq ? "אנשי מנהלה" : (owner() || DATA.teacher || ""),
+      code: function () { return (DATA.hq && DATA.hq.code) || (TEAM ? dGet("duty-code") : "") || ""; }, saveCode: function (c) { dSet("duty-code", c); },
+      device: function () { var o = owner(); var t = o && dGet("dev-" + o); return t ? { name: o, token: t } : null; } });
   }
   // Team leads see their team's monthly report under the list.
   var REP = null, REPM = null;
