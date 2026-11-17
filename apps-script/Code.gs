@@ -1,12 +1,13 @@
 /**
  * "המערכת האישית שלי" — personal reminders, personal codes and the HQ view.
  *
- * Runs inside the management sheet (Extensions → Apps Script), deployed as a web app:
+ * A standalone Apps Script project (script.google.com, signed in as the unit), deployed as a web app:
  *   Deploy → New deployment → Web app → Execute as: Me → Who has access: Anyone.
  * The first run creates a separate, private spreadsheet "המערכת האישית — קודים ותזכורות"
  * in the owner's Drive. Codes and reminders live only there, never in the public site.
  */
 
+var SHEET_ID = '11AgQeq267joV3MHYxot3YrSCvdH2UfEf4WvLx5S_Kt4';  // the management sheet
 var STAFF_TAB = 'אנשי צוות';
 var COL_NAME = 'שם (כמו בשחף: משפחה ואז פרטי)';
 var MAX_TEXT = 120;
@@ -113,7 +114,7 @@ function hq(req) {
 // ---- data
 
 function staffList() {
-  var tab = SpreadsheetApp.getActive().getSheetByName(STAFF_TAB);
+  var tab = SpreadsheetApp.openById(SHEET_ID).getSheetByName(STAFF_TAB);
   var rows = tab.getDataRange().getValues();
   var head = rows.shift();
   var col = function (h) { return head.indexOf(h); };
