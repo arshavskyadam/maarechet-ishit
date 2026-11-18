@@ -136,6 +136,13 @@ def report_message(reports, month, team):
     return [(f"report|{month}", f"📊 {team} · דוח תורנויות {name}", body)]
 
 
+def vapid_sub():
+    """The push services want a contact as a bare https origin (no path) or mailto: address."""
+    from urllib.parse import urlsplit
+    u = urlsplit(CONFIG.get("site_url") or "")
+    return f"https://{u.hostname}" if u.hostname else "https://github.com"
+
+
 def send_all(webpush, WebPushException, sub, name, messages, log, today, key):
     """Send each message once; returns (sent, gone) where gone means the phone turned notifications off."""
     sent = 0
@@ -148,7 +155,7 @@ def send_all(webpush, WebPushException, sub, name, messages, log, today, key):
             continue
         try:
             webpush(subscription_info=sub, data=json.dumps({"title": title, "body": body, "tag": tag[:40], "url": CONFIG.get("site_url", "./")}, ensure_ascii=False),
-                    vapid_private_key=key, vapid_claims={"sub": CONFIG.get("site_url") or "https://github.com"}, ttl=3600)
+                    vapid_private_key=key, vapid_claims={"sub": vapid_sub()}, ttl=3600)
             log[k] = today
             sent += 1
         except WebPushException as e:
@@ -156,6 +163,8 @@ def send_all(webpush, WebPushException, sub, name, messages, log, today, key):
             if code in (404, 410):
                 return sent, True
             print(f"notifications: one failed ({code})")
+        except Exception as e:  # noqa: BLE001 - one bad message must not stop the others
+            print(f"notifications: one failed ({type(e).__name__}: {e})")
     return sent, False
 
 
@@ -232,14 +241,26 @@ def main():
                 if t and window[0] <= mins(t) < window[1]:
                     what = d["role"] or "תורן חצר"
                     messages.append((f"duty|{d['grade']}|{d['hour']}|{d['role']}", f"🛡️ {what} · {t}", where(d["grade"])))
+        # Today's changes not sent yet, together in one message (a missed run catches up on the next).
+        new = []
         for c in data.get("changelog", []):
-            if c.get("date") == today and c.get("detected_at") == latest.get("scraped_at"):
-                messages.append((f"chg|{c.get('kind')}|{c.get('text')}", "⚠️ שינוי במערכת להיום", f"{c.get('kind')}: {fill(c.get('text', ''))}"))
+            if c.get("date") == today and c.get("kind") != "עודכן":
+                k = "c:" + hashlib.sha1(f"{name}|{today}|{c.get('kind')}|{c.get('text')}".encode("utf-8")).hexdigest()[:16]
+                line = f"{c.get('kind')}: {fill(c.get('text', ''))}"
+                if k not in log and line not in [x[1] for x in new]:
+                    new.append((k, line))
+        if new:
+            body = "\n".join(x[1] for x in new[:5]) + (f"\nועוד {len(new) - 5}" if len(new) > 5 else "")
+            title = "⚠️ שינוי במערכת להיום" if len(new) == 1 else f"⚠️ {len(new)} שינויים במערכת להיום"
+            messages.append(("chg|" + new[0][0], title, body))
 
         if rmonth and name in lead_of:
             messages += report_message(reports, rmonth, lead_of[name])
         ok, gone = send_all(webpush, WebPushException, sub, name, messages, log, today, key)
         sent += ok
+        if new and hashlib.sha1(f"{name}|{today}|chg|{new[0][0]}".encode("utf-8")).hexdigest()[:16] in log:
+            for k, _ in new:  # these changes went out
+                log[k] = today
         if gone:  # the phone turned notifications off
             api({"action": "push_drop", "token": token, "endpoint": sub.get("endpoint", "")})
             dropped += 1
