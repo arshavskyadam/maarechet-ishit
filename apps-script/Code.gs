@@ -169,8 +169,10 @@ function dutySet(req) {
     ok = true;
   }
   if (!ok) { Utilities.sleep(800); return { ok: false, error: 'wrong code' }; }
-  var person = clean(req.person);
-  if (person && !staff.some(function (p) { return p.name === person; })) return { ok: false, error: 'unknown name' };
+  // one name, or two joined by "|" (the lunch-break roles can take two people)
+  var names = String(req.person || '').split('|').map(clean).filter(function (x) { return x; }).slice(0, 2);
+  if (names.some(function (n) { return !staff.some(function (p) { return p.name === n; }); })) return { ok: false, error: 'unknown name' };
+  var person = names.join('|');
   var tab = ensureSheet('תורנויות ידניות', DUTY_HEAD);
   var rows = tab.getDataRange().getDisplayValues();
   for (var i = rows.length - 1; i >= 1; i--) {

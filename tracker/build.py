@@ -25,7 +25,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 from lib import (diff, dm, fill, homeroom_line, load_json, morning_summary, notify_ntfy,  # noqa: E402
                  todays_changes, write_json)
-from scrape import CHANGE_TYPES, ISRAEL_TZ, collect, homeroom_info, scrape  # noqa: E402
+from scrape import ISRAEL_TZ, collect, homeroom_info, scrape  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 DOCS = ROOT / "docs"
@@ -292,9 +292,9 @@ def build_duty(raw, now, people, team_defs):
         if hour is None:
             continue
         for name, cell in entries:
-            # an hour counts while the grade is in class: a lesson, or an exam or event in place of one
-            # (not a cancellation / free period)
-            if cell["lessons"] or any(ch["type"] != CHANGE_TYPES["TableFreeChange"] for ch in cell.get("changes", [])):
+            # The grade's school day: every hour up to its last one gets a yard-duty slot, whatever
+            # happens in it (lessons, exams, events, cancellations).
+            if cell["lessons"] or cell.get("changes") or cell.get("removed"):
                 grade_hours.setdefault((date, duty_group(grade_of(name))), set()).add(hour)
     # The fairness table: every duty since the start of this month counts, not only today's.
     hist_path = DOCS / "data" / "duty_history.json"
@@ -320,8 +320,8 @@ def build_duty(raw, now, people, team_defs):
     for date in dates:
         day_out, taken_at = {}, {}
         for (grade, h, role), e in edits.items():  # hand-made choices come first
-            if e["person"]:
-                taken_at.setdefault(h, set()).add(e["person"])
+            for c in e["people"]:
+                taken_at.setdefault(h, set()).add(c)
         for team, t in team_defs.items():
             members = [m for m in t.get("members", []) if m in known]
             if not members:
@@ -332,8 +332,8 @@ def build_duty(raw, now, people, team_defs):
                     continue
                 old = {(s["hour"], s.get("role", "")): s["people"] for s in prev.get(date, {}).get(grade, {}).get("slots", [])}
                 slots = []
-                wanted = [(h, "") for h in hours if h >= 1]
-                if any(h >= 7 for h in hours):
+                wanted = [(h, "") for h in range(1, max(hours) + 1)]
+                if max(hours) >= 7:
                     wanted.append((6.5, LUNCH_ROLES[0]))
                     wanted.append((6.5, LUNCH_ROLES[1]))
                 free_hours = {m: sum(1 for h, r in wanted if not r and (date, h) not in busy.get(m, set())) for m in members}
@@ -341,7 +341,7 @@ def build_duty(raw, now, people, team_defs):
                     taken = taken_at.setdefault(h, set())
                     e = edits.get((grade, h, role))
                     if e:
-                        chosen = [e["person"]] if e["person"] else []
+                        chosen = list(e["people"])
                         for c in chosen:
                             count[c] = count.get(c, 0) + 1
                             last[c] = date
@@ -394,13 +394,14 @@ def duty_edits(today, prev_day):
         if not r.get("ok"):
             raise ValueError(r.get("error"))
         for e in r["edits"]:
+            e["people"] = [x.strip() for x in str(e.get("person") or "").split("|") if x.strip()][:2]
             out[(duty_group(e["grade"]), float(e["hour"]) if float(e["hour"]) % 1 else int(e["hour"]), e.get("role", ""))] = e
     except Exception as err:  # noqa: BLE001
         print(f"duty edits: engine not reached ({err}), keeping the earlier ones")
         for grade, g in prev_day.items():
             for s in g.get("slots", []):
                 if s.get("manual"):
-                    out[(grade, s["hour"], s.get("role", ""))] = {"person": (s["people"] or [""])[0], "note": s.get("note", ""), "by": s.get("by", "")}
+                    out[(grade, s["hour"], s.get("role", ""))] = {"people": s["people"][:2], "note": s.get("note", ""), "by": s.get("by", "")}
     if out:
         print(f"duty edits: {len(out)}")
     return out
