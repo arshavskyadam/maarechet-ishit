@@ -25,7 +25,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 from lib import (diff, dm, fill, homeroom_line, load_json, morning_summary, notify_ntfy,  # noqa: E402
                  todays_changes, write_json)
-from scrape import ISRAEL_TZ, collect, homeroom_info, scrape  # noqa: E402
+from scrape import CHANGE_TYPES, ISRAEL_TZ, collect, homeroom_info, scrape  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 DOCS = ROOT / "docs"
@@ -292,7 +292,9 @@ def build_duty(raw, now, people, team_defs):
         if hour is None:
             continue
         for name, cell in entries:
-            if cell["lessons"]:
+            # an hour counts while the grade is in class: a lesson, or an exam or event in place of one
+            # (not a cancellation / free period)
+            if cell["lessons"] or any(ch["type"] != CHANGE_TYPES["TableFreeChange"] for ch in cell.get("changes", [])):
                 grade_hours.setdefault((date, duty_group(grade_of(name))), set()).add(hour)
     # The fairness table: every duty since the start of this month counts, not only today's.
     hist_path = DOCS / "data" / "duty_history.json"
