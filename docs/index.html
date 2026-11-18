@@ -442,7 +442,7 @@ function dutyApply(duty, date, edits) {
     var g = day[dGroup(e.grade)]; if (!g) return;
     g.slots.forEach(function (sl) {
       if (Number(sl.hour) === Number(e.hour) && (sl.role || "") === (e.role || "")) {
-        sl.people = e.person ? [e.person] : []; sl.manual = true; sl.note = e.note; sl.by = e.by;
+        sl.people = String(e.person || "").split("|").filter(function (x) { return x; }).slice(0, 2); sl.manual = true; sl.note = e.note; sl.by = e.by;
       }
     });
   });
@@ -467,11 +467,13 @@ function dutyBind(box, ctx) {
       var g = ctx.duty.days[ctx.date][grade], sl = g.slots.filter(function (x) { return Number(x.hour) === hour && (x.role || "") === role; })[0];
       var free = role ? (g.members || []) : ((g.free_at || {})[String(hour)] || []);
       var others = (g.members || []).filter(function (m) { return free.indexOf(m) < 0; });
-      var cur = sl.people[0] || "", code = ctx.code(), dev = !code && ctx.device ? ctx.device() : null;
+      var cur = sl.people[0] || "", cur2 = sl.people[1] || "", code = ctx.code(), dev = !code && ctx.device ? ctx.device() : null;
       var opt = function (m, tag) { return '<option value="' + dEsc(m) + '"' + (m === cur ? " selected" : "") + '>' + dEsc(m) + (tag ? " · " + tag : "") + '</option>'; };
-      if (cur && (g.members || []).indexOf(cur) < 0) others.push(cur);
+      [cur, cur2].forEach(function (c) { if (c && (g.members || []).indexOf(c) < 0 && others.indexOf(c) < 0) others.push(c); });
+      var opt2 = function (m) { return '<option value="' + dEsc(m) + '"' + (m === cur2 ? " selected" : "") + '>' + dEsc(m) + '</option>'; };
       var h = '<form class="dedit">' +
         '<label>מי תורן<select name="p"><option value=""' + (cur ? "" : " selected") + '>— אף אחד —</option>' + free.map(function (m) { return opt(m, role ? "" : "פנוי"); }).join("") + others.map(function (m) { return opt(m, "בשיעור"); }).join("") + '</select></label>' +
+        (role ? '<label>תורן נוסף (לא חובה)<select name="p2"><option value=""' + (cur2 ? "" : " selected") + '>— בלי —</option>' + (g.members || []).concat(others.filter(function (m) { return (g.members || []).indexOf(m) < 0; })).map(opt2).join("") + '</select></label>' : "") +
         '<label>הערה</label><div class="chips">' + DUTY_NOTES.map(function (n) { return '<button type="button" data-n="' + n + '" aria-pressed="' + (sl.note === n) + '">' + n + '</button>'; }).join("") + '</div>' +
         '<input name="n" type="text" maxlength="40" placeholder="או הערה אחרת" value="' + dEsc(sl.manual && DUTY_NOTES.indexOf(sl.note) < 0 ? sl.note || "" : "") + '">' +
         (code || dev ? "" : ctx.askCode ? '<label>קוד (כמו של ראשי הצוותים)<input name="c" type="password" inputmode="numeric" autocomplete="off"></label>' :
@@ -485,20 +487,24 @@ function dutyBind(box, ctx) {
         form.querySelectorAll(".chips button").forEach(function (x) { x.setAttribute("aria-pressed", x.getAttribute("data-n") === note); });
         if (note) form.n.value = "";
       };
+      function picked() {
+        var a = [form.p.value, form.p2 ? form.p2.value : ""].filter(function (x) { return x; });
+        return a.filter(function (x, i) { return a.indexOf(x) === i; });
+      }
       function send(action) {
         var c = code || (form.c ? form.c.value.trim() : "");
         if (!c && !dev) { form.querySelector(".err").textContent = "צריך קוד."; return; }
         if (!ctx.api) { form.querySelector(".err").textContent = "המנוע לא מחובר."; return; }
         form.querySelector(".err").textContent = "שומר…";
         fetch(ctx.api, { method: "POST", body: JSON.stringify({ action: action, code: c, name: dev && !c ? dev.name : "", token: dev && !c ? dev.token : "", date: ctx.date, grade: grade, hour: hour, role: role,
-          person: form.p.value, note: form.n.value.trim() || note, by: ctx.by || "" }) }).then(function (r) { return r.json(); }).then(function (r) {
+          person: picked().join("|"), note: form.n.value.trim() || note, by: ctx.by || "" }) }).then(function (r) { return r.json(); }).then(function (r) {
           if (!r.ok) {
             form.querySelector(".err").textContent = r.error === "wrong code" ? "הקוד לא נכון." : r.error === "not your team" ? "אפשר לשנות רק את התורנויות של הצוות שלך." :
               r.error === "not this phone" ? "הטלפון הזה כבר לא מקושר. מקשרים מחדש דרך \"הפעלת התראות וקישור הטלפון\"." : "לא נשמר. נסו שוב.";
             if (r.error === "wrong code") ctx.saveCode(null); return;
           }
           if (c) ctx.saveCode(c);
-          if (action === "duty_set") { sl.people = form.p.value ? [form.p.value] : []; sl.manual = true; sl.note = form.n.value.trim() || note; sl.by = ctx.by || ""; }
+          if (action === "duty_set") { sl.people = picked(); sl.manual = true; sl.note = form.n.value.trim() || note; sl.by = ctx.by || ""; }
           return dutyEdits(ctx.api, ctx.date).then(function (edits) {
             if (action === "duty_clear") { sl.manual = false; sl.note = ""; }
             dutyApply(ctx.duty, ctx.date, edits); ctx.redraw();
