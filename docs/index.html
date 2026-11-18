@@ -439,7 +439,7 @@ function dutyEdits(api, date) {
 function dutyApply(duty, date, edits) {
   var day = duty && duty.days && duty.days[date]; if (!day) return;
   edits.forEach(function (e) {
-    var g = day[e.grade]; if (!g) return;
+    var g = day[dGroup(e.grade)]; if (!g) return;
     g.slots.forEach(function (sl) {
       if (Number(sl.hour) === Number(e.hour) && (sl.role || "") === (e.role || "")) {
         sl.people = e.person ? [e.person] : []; sl.manual = true; sl.note = e.note; sl.by = e.by;
