@@ -41,23 +41,38 @@ function handle(req) {
   var staff = staffList();
   var me = staff.filter(function (p) { return p.name === name; })[0];
   if (!me) return { ok: false, error: 'unknown name' };
-  // Each person is linked to one phone: the first phone that links gets a device key, and only that
-  // key opens the person's reminders. To move someone to a new phone, delete their row in "מכשירים".
+  // Each person's reminders open only on the browsers linked to them. The first browser links freely;
+  // another browser (Chrome next to Safari, the home-screen icon, a new phone) needs a one-time code
+  // shown on a browser that is already linked. To reset someone, delete their rows in "מכשירים".
   var dev = ensureSheet('מכשירים', ['שם', 'מפתח מכשיר', 'קושר']);
-  var row = findRow(dev, 1, name);
-  if (a === 'status') return { ok: true, bound: row > 0 };
+  var mine = dev.getDataRange().getValues().slice(1).filter(function (r) { return String(r[0]) === name; });
+  if (a === 'status') return { ok: true, bound: mine.length > 0 };
   if (a === 'bind') {
-    if (row > 0) {
-      if (req.token && String(dev.getRange(row, 2).getValue()) === String(req.token)) return { ok: true, token: req.token };
-      return { ok: false, error: 'bound elsewhere' };
+    if (req.token && mine.some(function (r) { return String(r[1]) === String(req.token); })) return { ok: true, token: req.token };
+    if (mine.length) {
+      var cache = CacheService.getScriptCache(), want = cache.get('link:' + name);
+      if (!req.link) return { ok: false, error: 'bound elsewhere' };
+      if (!want || String(req.link).trim() !== want) {
+        var tries = Number(cache.get('tries:' + name) || 0) + 1;
+        if (tries >= 5) { cache.remove('link:' + name); cache.remove('tries:' + name); } else cache.put('tries:' + name, String(tries), 600);
+        Utilities.sleep(800);
+        return { ok: false, error: 'wrong link code' };
+      }
+      cache.remove('link:' + name); cache.remove('tries:' + name);
     }
     var token = Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '');
     dev.appendRow([name, token, new Date()]);
     return { ok: true, token: token };
   }
-  if (row < 1 || String(dev.getRange(row, 2).getValue()) !== String(req.token || '')) {
+  if (!req.token || !mine.some(function (r) { return String(r[1]) === String(req.token); })) {
     Utilities.sleep(800);
     return { ok: false, error: 'not this phone' };
+  }
+  if (a === 'link_code') {  // a 6-digit code, good for 10 minutes, to link one more browser
+    var code = String(Math.floor(100000 + Math.random() * 900000));
+    CacheService.getScriptCache().put('link:' + name, code, 600);
+    CacheService.getScriptCache().remove('tries:' + name);
+    return { ok: true, code: code };
   }
   var rem = sheet('תזכורות');
   if (a === 'list') return { ok: true, reminders: reminders(rem, function (r) { return r.name === name; }) };
@@ -163,8 +178,9 @@ function dutySet(req) {
   var ok = code && [setting('קוד מפקדים'), setting('קוד אנשי מנהלה')].some(function (w) { return w && code === String(w); });
   if (!ok && !code && req.name && req.token) {
     var name = clean(req.name), me = staff.filter(function (p) { return p.name === name; })[0];
-    var dev = ensureSheet('מכשירים', ['שם', 'מפתח מכשיר', 'קושר']), row = findRow(dev, 1, name);
-    if (!me || row < 1 || String(dev.getRange(row, 2).getValue()) !== String(req.token)) { Utilities.sleep(800); return { ok: false, error: 'not this phone' }; }
+    var linked = ensureSheet('מכשירים', ['שם', 'מפתח מכשיר', 'קושר']).getDataRange().getValues().slice(1)
+      .some(function (r) { return String(r[0]) === name && String(r[1]) === String(req.token); });
+    if (!me || !linked) { Utilities.sleep(800); return { ok: false, error: 'not this phone' }; }
     if (teamGrades(me.team).indexOf(grade) < 0) return { ok: false, error: 'not your team' };
     ok = true;
   }

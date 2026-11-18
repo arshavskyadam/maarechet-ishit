@@ -161,6 +161,7 @@ table.week .n { display: block; color: var(--good); font-weight: 600; }
 /* notifications */
 .pushbtn { font: inherit; font-weight: 600; color: var(--accent); background: var(--accent-soft); border: 1px solid var(--accent); border-radius: var(--r); padding: 9px 12px; cursor: pointer; width: 100%; }
 .pushon { font-size: .85rem; color: var(--good); font-weight: 600; }
+.linkmore { font: inherit; font-size: .82rem; margin-top: 6px; padding: 4px 12px; border-radius: 999px; border: 1px dashed var(--line); background: none; color: var(--muted); cursor: pointer; }
 .pushhint { font-size: .82rem; color: var(--muted); margin: 0; }
 /* commander */
 .lead.cmdbtn { border-style: dashed; }
@@ -856,31 +857,65 @@ function startApp(DATA, TEAM) {
       else if (r.error === "not this phone") { store(DEV_KEY, ""); if (owner() === ME) store(OWNER_KEY, ""); }
     }).catch(function () {});
   }
-  // Link this phone to this person, after they confirm the page is theirs.
+  // Link this browser to this person, after they confirm the page is theirs. The first browser links
+  // freely; another one (Chrome next to Safari, the home-screen icon, a new phone) needs a one-time
+  // code from a browser that is already linked.
   function bindFlow(slot, done) {
     if (otherOwner()) {
       slot.innerHTML = '<div class="empty">הטלפון הזה מקושר למערכת של ' + esc(owner()) + '. תזכורות והתראות זמינות רק במערכת שלך.</div>';
       return;
     }
     slot.innerHTML = '<div class="noteform" data-login="1"><p style="margin:0;font-weight:600">זו המערכת שלך, ' + esc(ME) + '?</p>' +
-      '<p class="hint" style="font-size:.85rem">הטלפון הזה יקושר למערכת שלך. מעכשיו רק ממנו אפשר יהיה לראות את התזכורות שלך ולקבל התראות.</p>' +
+      '<p class="hint" style="font-size:.85rem">הדפדפן הזה יקושר למערכת שלך. מעכשיו רק ממנו (ומדפדפנים נוספים שתקשר) אפשר יהיה לראות את התזכורות שלך ולקבל התראות.</p>' +
       '<div class="btns"><button type="button" class="save" id="b-yes">כן, זו המערכת שלי</button><button type="button" id="n-cancel">ביטול</button></div><p class="hint" id="b-err"></p></div>';
+    slot.querySelector("#n-cancel").onclick = function () { if (slot.id === "noteslot") renderDay(); else pushSetup(); };
     slot.querySelector("#b-yes").onclick = function () {
       var err = slot.querySelector("#b-err"); err.textContent = "מקשר…";
       call({ action: "bind", name: ME }).then(function (r) {
-        if (!r.ok) {
-          err.textContent = r.error === "bound elsewhere" ? "המערכת הזו כבר מקושרת לטלפון אחר. החלפת טלפון? בקשו ממנהל המערכת לאפס את הקישור." :
-            r.error === "unknown name" ? "השם לא נמצא ברשימת אנשי הצוות. פנו למנהל המערכת." : "לא הצלחתי לקשר. נסו שוב בעוד רגע.";
-          return;
-        }
-        store(DEV_KEY, r.token); store(OWNER_KEY, ME);
-        // reminders written on this phone before the link move to the unit's store
-        return notes.slice().reduce(function (pr, n) {
-          return pr.then(function () { return call({ action: "add", name: ME, token: r.token, reminder: n }); });
-        }, Promise.resolve()).then(syncNotes).then(done);
+        if (r.ok) return finishBind(r.token, done);
+        if (r.error === "bound elsewhere") return linkFlow(slot, done);
+        err.textContent = r.error === "unknown name" ? "השם לא נמצא ברשימת אנשי הצוות. פנו למנהל המערכת." : "לא הצלחתי לקשר. נסו שוב בעוד רגע.";
       }).catch(function () { err.textContent = "אין חיבור. נסו שוב בעוד רגע."; });
     };
-    slot.querySelector("#n-cancel").onclick = function () { if (slot.id === "noteslot") renderDay(); else pushSetup(); };
+  }
+  function linkFlow(slot, done) {
+    slot.innerHTML = '<form class="noteform" id="l-form"><p style="margin:0;font-weight:600">המערכת שלך כבר מקושרת בדפדפן אחר</p>' +
+      '<p class="hint" style="font-size:.85rem">כדי לקשר גם את הדפדפן הזה: פתח את המערכת שלך בדפדפן שכבר מקושר (למשל ספארי, או האייקון במסך הבית), לחץ שם על <b>"📲 קישור דפדפן נוסף"</b>, והקלד כאן את הקוד שמופיע.</p>' +
+      '<label for="l-code">קוד קישור<input id="l-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6"></label>' +
+      '<div class="btns"><button type="submit" class="save">קישור</button><button type="button" id="l-cancel">ביטול</button></div>' +
+      '<p class="hint" id="l-err">אין לך גישה לדפדפן הקודם? מנהל המערכת יכול לאפס את הקישור.</p></form>';
+    slot.querySelector("#l-cancel").onclick = function () { if (slot.id === "noteslot") renderDay(); else pushSetup(); };
+    slot.querySelector("#l-form").onsubmit = function (e) {
+      e.preventDefault();
+      var err = slot.querySelector("#l-err"), code = slot.querySelector("#l-code").value.trim();
+      if (!/^\d{6}$/.test(code)) { err.textContent = "הקוד הוא 6 ספרות."; return; }
+      err.textContent = "מקשר…";
+      call({ action: "bind", name: ME, link: code }).then(function (r) {
+        if (r.ok) return finishBind(r.token, done);
+        err.textContent = r.error === "wrong link code" ? "הקוד לא נכון או שעברו 10 דקות. צור קוד חדש בדפדפן המקושר." : "לא הצלחתי לקשר. נסו שוב בעוד רגע.";
+      }).catch(function () { err.textContent = "אין חיבור. נסו שוב בעוד רגע."; });
+    };
+    slot.querySelector("#l-code").focus();
+  }
+  function finishBind(token, done) {
+    store(DEV_KEY, token); store(OWNER_KEY, ME);
+    // reminders written in this browser before the link move to the unit's store
+    return notes.slice().reduce(function (pr, n) {
+      return pr.then(function () { return call({ action: "add", name: ME, token: token, reminder: n }); });
+    }, Promise.resolve()).then(syncNotes).then(done);
+  }
+  // On a linked browser: a one-time code to link one more (another browser, the home-screen icon, a new phone).
+  function linkMore(box) {
+    var b = document.createElement("div");
+    b.innerHTML = '<button type="button" class="linkmore" id="lm-go">📲 קישור דפדפן נוסף</button><p class="pushhint" id="lm-out" hidden></p>';
+    box.appendChild(b);
+    document.getElementById("lm-go").onclick = function () {
+      var out = document.getElementById("lm-out"); out.hidden = false; out.textContent = "יוצר קוד…";
+      call({ action: "link_code", name: ME, token: myToken() }).then(function (r) {
+        out.innerHTML = r.ok ? 'הקוד: <b style="font-size:1.4rem;letter-spacing:.15em" dir="ltr">' + esc(r.code) + '</b><br>בדפדפן החדש פותחים את המערכת שלך, לוחצים "הפעלת התראות וקישור הטלפון" ומקלידים את הקוד. בתוקף ל־10 דקות.' :
+          "לא הצלחתי ליצור קוד. נסו שוב בעוד רגע.";
+      }).catch(function () { out.textContent = "אין חיבור. נסו שוב בעוד רגע."; });
+    };
   }
   // ---- pop-up notifications (Web Push); the hourly update sends them
   function b64key(s) {
@@ -897,12 +932,14 @@ function startApp(DATA, TEAM) {
       box.innerHTML = (myToken() ? '<span class="pushon">🔗 הטלפון מקושר למערכת שלך</span>' : '<button type="button" class="pushbtn" id="linkgo">🔗 קישור הטלפון למערכת שלי</button>') +
         (ios && !standalone ? '<p class="pushhint">🔔 כדי לקבל התראות באייפון: כפתור השיתוף ⬆️ ← "הוספה למסך הבית", ואז לפתוח את האתר מהאייקון.</p>' : "");
       var lg = document.getElementById("linkgo"); if (lg) lg.onclick = function () { bindFlow(box, pushSetup); };
+      if (myToken()) linkMore(box);
       return;
     }
     navigator.serviceWorker.register("sw.js").then(function (reg) {
       return reg.pushManager.getSubscription().then(function (sub) {
-        if (sub && myToken() && store("push-on") === ME) { box.innerHTML = '<span class="pushon">🔔 ההתראות פעילות והטלפון מקושר למערכת שלך</span>'; return; }
+        if (sub && myToken() && store("push-on") === ME) { box.innerHTML = '<span class="pushon">🔔 ההתראות פעילות והטלפון מקושר למערכת שלך</span>'; linkMore(box); return; }
         box.innerHTML = '<button type="button" class="pushbtn" id="pushgo">🔔 הפעלת התראות וקישור הטלפון</button><p class="pushhint">צעד ראשון חובה: מקשר את הטלפון למערכת שלך. מקבלים סיכום בוקר, שינויים של היום, ותזכורות ותורנויות לפני שהן מתחילות.</p>';
+        if (myToken()) linkMore(box);
         document.getElementById("pushgo").onclick = function () {
           if (!myToken()) { bindFlow(box, function () { document.getElementById("pushgo") ? null : pushSetup(); subscribe(reg, box); }); return; }
           subscribe(reg, box);
