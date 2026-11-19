@@ -489,7 +489,8 @@ function dutyBind(box, ctx) {
       [cur, cur2].forEach(function (c) { if (c && (g.members || []).indexOf(c) < 0 && others.indexOf(c) < 0) others.push(c); });
       var opt2 = function (m) { return '<option value="' + dEsc(m) + '"' + (m === cur2 ? " selected" : "") + '>' + dEsc(m) + '</option>'; };
       var h = '<form class="dedit">' +
-        '<label>מי תורן<select name="p"><option value=""' + (cur ? "" : " selected") + '>— אף אחד —</option>' + free.map(function (m) { return opt(m, role ? "" : "פנוי"); }).join("") + others.map(function (m) { return opt(m, "בשיעור"); }).join("") + '</select></label>' +
+        '<label>מי תורן<select name="p"><option value=""' + (cur ? "" : " selected") + '>— אף אחד —</option>' + free.map(function (m) { return opt(m, role ? "" : "פנוי"); }).join("") + others.filter(function (m) { return (g.away || []).indexOf(m) < 0; }).map(function (m) { return opt(m, "בשיעור"); }).join("") +
+          others.filter(function (m) { return (g.away || []).indexOf(m) >= 0; }).map(function (m) { return opt(m, "נעדר/ת היום"); }).join("") + '</select></label>' +
         (role ? '<label>תורן נוסף (לא חובה)<select name="p2"><option value=""' + (cur2 ? "" : " selected") + '>— בלי —</option>' + (g.members || []).concat(others.filter(function (m) { return (g.members || []).indexOf(m) < 0; })).map(opt2).join("") + '</select></label>' : "") +
         '<label>הערה</label><div class="chips">' + DUTY_NOTES.map(function (n) { return '<button type="button" data-n="' + n + '" aria-pressed="' + (sl.note === n) + '">' + n + '</button>'; }).join("") + '</div>' +
         '<input name="n" type="text" maxlength="40" placeholder="או הערה אחרת" value="' + dEsc(sl.manual && DUTY_NOTES.indexOf(sl.note) < 0 ? sl.note || "" : "") + '">' +
