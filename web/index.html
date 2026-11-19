@@ -1053,6 +1053,16 @@ function startApp(DATA, TEAM) {
   function match(l) {
     return (!fc.value || l.classes.indexOf(fc.value) >= 0) && (!ft.value || l.co_teachers.some(function (c) { return c.name === ft.value; }));
   }
+  // Every period of the school day, 1 to 9 (and 0 or 10 when there is a lesson then), even an empty one.
+  function allHours(hours) {
+    var nums = Object.keys(hours).map(Number), lo = Math.min.apply(null, nums.concat([1])), hi = Math.max.apply(null, nums.concat([9]));
+    var hs = [];
+    for (var x = lo; x <= hi; x++) {
+      if (!hours[x] && NH[x]) hours[x] = NH[x][1] + "–" + NH[x][2];
+      if (hours[x]) hs.push(x);
+    }
+    return hs;
+  }
   function renderWeek() {
     document.getElementById("weeknav").innerHTML = weeks.map(function (w, i) {
       return '<button type="button" data-w="' + i + '" aria-pressed="' + (i === weekIdx) + '">' + (i === 0 ? "השבוע" : i === 1 ? "שבוע הבא" : "שבוע " + (i + 1)) + ' <span class="mono">' + dm(w[0].date) + '</span></button>';
@@ -1061,7 +1071,7 @@ function startApp(DATA, TEAM) {
     var inWeek = lessons.filter(function (l) { return days.some(function (d) { return d.date === l.date; }); });
     var hours = {}; inWeek.forEach(function (l) { hours[l.hour] = l.start + "–" + l.end; });
     days.forEach(function (d) { notesOn(d.date).forEach(function (n) { if (!hours[n.hour] && NH[n.hour]) hours[n.hour] = NH[n.hour][1] + "–" + NH[n.hour][2]; }); });
-    var hs = Object.keys(hours).map(Number).sort(function (a, b) { return a - b; });
+    var hs = allHours(hours);
     var shown = active(inWeek.filter(match));
     var h = '<tr><th class="h">שעה</th>' + days.map(function (d) { return '<th>' + esc(d.weekday.replace("יום ", "")) + ' <span class="mono">' + dm(d.date) + '</span>' + d.holidays.map(function (x) { return '<span class="hol">' + esc(x) + '</span>'; }).join("") + '</th>'; }).join("") + '</tr>';
     hs.forEach(function (hr) {
@@ -1370,11 +1380,11 @@ function startApp(DATA, TEAM) {
       return '<button type="button" data-cw="' + (i - cur) + '" aria-pressed="' + (i === wi) + '">' + (i === cur ? "השבוע" : i > cur ? "שבוע הבא" : "שבוע קודם") + ' <span class="mono">' + dm(x.days[0].date) + '</span></button>';
     }).join("");
     var inWeek = ls.filter(function (l) { return wk.days.some(function (d) { return d.date === l.date; }); });
-    var hours = {}; inWeek.forEach(function (l) { hours[l.hour] = l.start; });
-    var hs = Object.keys(hours).map(Number).sort(function (a, b) { return a - b; });
+    var hours = {}; inWeek.forEach(function (l) { hours[l.hour] = l.start + "–" + l.end; });
+    var hs = allHours(hours);
     var h = '<tr><th class="h">שעה</th>' + wk.days.map(function (d) { return '<th' + (d.date === todayISO ? ' style="color:var(--accent)"' : "") + '>' + esc(d.weekday.replace("יום ", "")) + ' <span class="mono">' + dm(d.date) + '</span>' + d.holidays.map(function (x) { return '<span class="hol">' + esc(x) + '</span>'; }).join("") + '</th>'; }).join("") + '</tr>';
     hs.forEach(function (hr) {
-      h += '<tr><th class="h">' + hr + '<br><span style="font-size:.68rem">' + esc(hours[hr]) + '</span></th>';
+      h += '<tr><th class="h">' + hr + '<br><span style="font-size:.68rem">' + esc(hours[hr].split("–")[0]) + '</span></th>';
       wk.days.forEach(function (d) {
         var here = inWeek.filter(function (l) { return l.date === d.date && l.hour === hr; });
         if (!here.length) { h += '<td></td>'; return; }
