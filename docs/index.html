@@ -405,6 +405,9 @@ body { margin: 0; }
   <section id="view-rel" hidden style="display:grid; grid-template-columns:minmax(0,1fr); gap:12px">
     <div class="dayhead"><h2 id="rel-title">שחרורי כיתות · היום</h2></div>
     <div id="rel-body"><p class="muted">טוען…</p></div>
+    <div class="dayhead"><h2>בוקר וסוף יום לפי כיתה</h2>
+      <div class="seg" id="rel-day"><button type="button" data-rd="0" aria-pressed="true">היום</button><button type="button" data-rd="1" aria-pressed="false">יום הלימודים הבא</button></div></div>
+    <div id="rel-span"><p class="muted">טוען…</p></div>
   </section>
 
   <section id="view-agenda" hidden style="display:grid; grid-template-columns:minmax(0,1fr); gap:10px">
@@ -1400,7 +1403,56 @@ function startApp(DATA, TEAM) {
     if (view === "rel") renderRel();
   }
   // Who releases each class of the team's grades at the end of today (built with the yard duty).
+  // Start and end of the day for each class of the team's grades, today or on the next school day,
+  // with any level group that starts later or leaves earlier (its teacher dropped, no stand-in).
+  var RS = { day: 0, files: {}, grades: null };
+  function nextSchoolDay() {
+    var ds = (L.days || []).map(function (d) { return d.date; }).filter(function (d) { return d > todayISO && new Date(d + "T12:00:00").getDay() <= 4; });
+    return ds[0] || "";
+  }
+  function renderSpan() {
+    var box = document.getElementById("rel-span"), date = RS.day ? nextSchoolDay() : todayISO;
+    document.querySelectorAll("#rel-day button").forEach(function (b) { b.setAttribute("aria-pressed", String(+b.getAttribute("data-rd") === RS.day)); });
+    if (!date) { box.innerHTML = '<div class="empty">אין עדיין מערכת ליום הלימודים הבא.</div>'; return; }
+    if (!RS.grades) {
+      box.innerHTML = '<p class="muted">טוען…</p>';
+      Promise.all([getJSON("data/staff.json"), getJSON("data/classes.json")]).then(function (r) {
+        var teams = (r[0].teams || []).filter(function (t) { return DATA.hq || t.name === DATA.team_name; });
+        var gs = [].concat.apply([], teams.map(function (t) { return t.grades || []; }));
+        RS.grades = gs; RS.index = r[1].classes.filter(function (c) { return gs.indexOf(c.grade) >= 0; });
+        return Promise.all(RS.index.map(function (c) { return getJSON("data/class/" + c.id + ".json").then(function (f) { RS.files[c.id] = f; }, function () {}); }));
+      }).then(renderSpan).catch(function () { box.innerHTML = '<div class="empty">לא הצלחתי לטעון את מערכות הכיתות.</div>'; });
+      return;
+    }
+    var rows = RS.index.map(function (c) {
+      var f = RS.files[c.id]; if (!f) return "";
+      var sl = f.slots.filter(function (x) { return x.date === date && x.lessons.length; }).sort(function (a, b) { return a.hour - b.hour; });
+      if (!sl.length) return '<div class="r"><b>' + esc(c.name.replace(/\s+/g, "")) + '</b><span class="muted">אין לימודים</span></div>';
+      var first = sl[0], e = (f.ends || {})[date] || {}, endH = e.now ? e.now.hour : sl[sl.length - 1].hour;
+      var last = f.slots.filter(function (x) { return x.date === date && x.hour === endH; })[0] || sl[sl.length - 1];
+      function dropped(x) {  // removed teachers with no stand-in in that period
+        var subs = x.changes.filter(function (ch) { return /מילוי מקום/.test(ch.type); }).map(function (ch) { return ch.text; }).join(" ");
+        return x.removed.filter(function (r) { return r.teacher && subs.indexOf(r.teacher) < 0; });
+      }
+      var notes = dropped(first).map(function (r) {
+        var nx = sl.filter(function (x) { return x.hour > first.hour && x.lessons.some(function (l) { return l.teacher === r.teacher; }); })[0];
+        nx = nx || sl.filter(function (x) { return x.hour > first.hour; })[0];  // the group joins the rest of the class
+        return '⏰ הקבצה של ' + esc(r.teacher) + ' (' + esc(r.subject) + ') מתחילה ' + (nx ? "ב־" + esc(nx.start) + " (שעה " + nx.hour + ")" : "מאוחר יותר");
+      }).concat(dropped(last).map(function (r) {
+        var pv = sl.filter(function (x) { return x.hour < last.hour && x.lessons.some(function (l) { return l.teacher === r.teacher; }); }).pop();
+        pv = pv || sl.filter(function (x) { return x.hour < last.hour; }).pop();
+        return '🏠 הקבצה של ' + esc(r.teacher) + ' (' + esc(r.subject) + ') משתחררת ' + (pv ? "ב־" + esc(pv.end) + " (אחרי שעה " + pv.hour + ")" : "מוקדם יותר");
+      }));
+      var changed = e.regular && e.now && e.regular.hour !== e.now.hour ? ' <span class="sub-tag">בדרך כלל ' + esc(e.regular.end) + '</span>' : "";
+      return '<div class="r"><b>' + esc(c.name.replace(/\s+/g, "")) + '</b><span>מתחילה <b class="mono">' + esc(first.start) + '</b> · מסיימת <b class="mono">' + esc(e.now ? e.now.end : last.end) + '</b>' + changed +
+        (notes.length ? '<br><span class="sub-tag">' + notes.join("<br>") + '</span>' : "") + '</span></div>';
+    }).join("");
+    box.innerHTML = '<section class="hqday"><h3>' + esc(new Intl.DateTimeFormat("he-IL", { weekday: "long", day: "2-digit", month: "2-digit" }).format(new Date(date + "T12:00:00"))) + '</h3>' + rows + '</section>' +
+      '<p class="muted" style="margin:0;font-size:.8rem">הקבצה שהמורה שלה מבוטלת בלי מחליף בשעה הראשונה מגיעה מאוחר יותר, ובשעה האחרונה משתחררת מוקדם יותר. מילוי מקום לא משנה את השעות.</p>';
+  }
+  document.getElementById("rel-day").addEventListener("click", function (e) { var b = e.target.closest("button[data-rd]"); if (b) { RS.day = +b.getAttribute("data-rd"); renderSpan(); } });
   function renderRel() {
+    renderSpan();
     var body = document.getElementById("rel-body"), day = DUTY && DUTY.days[todayISO];
     document.getElementById("rel-title").textContent = "שחרורי כיתות · היום " + dm(todayISO);
     if (!DUTY) { body.innerHTML = '<p class="muted">טוען…</p>'; return; }
