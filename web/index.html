@@ -362,6 +362,8 @@ body { margin: 0; }
     <button role="tab" id="tab-agenda" aria-selected="false" data-view="agenda">מבחנים ואירועים</button>
     <button role="tab" id="tab-hist" aria-selected="false" data-view="hist">יומן</button>
     <button role="tab" id="tab-team" aria-selected="false" data-view="team" hidden>זמן לצוות</button>
+    <button role="tab" id="tab-crem" aria-selected="false" data-view="crem" hidden>תזכורות הצוות</button>
+    <button role="tab" id="tab-cchg" aria-selected="false" data-view="cchg" hidden>שינויים בצוות</button>
   </nav>
 
   <section id="view-day" class="lessons-view" style="display:grid; grid-template-columns:minmax(0,1fr); gap:14px">
@@ -409,6 +411,9 @@ body { margin: 0; }
     <div class="strip" id="team-strip" aria-label="בחירת יום"></div>
     <div id="team-result"></div>
   </section>
+
+  <section id="view-crem" hidden style="display:grid; grid-template-columns:minmax(0,1fr); gap:10px"><div id="crem-body"></div></section>
+  <section id="view-cchg" hidden style="display:grid; grid-template-columns:minmax(0,1fr); gap:10px"><div id="cchg-body"></div></section>
 
   <section id="view-hist" hidden style="display:grid; grid-template-columns:minmax(0,1fr); gap:10px">
     <p class="muted" style="margin:0">כל יום נשמר כאן לפי הגרסה האחרונה שנבדקה באתר.</p>
@@ -579,6 +584,7 @@ function dutyReport(rep, team, month) {
 </script>
 <script>
 function startApp(DATA, TEAM) {
+  var CMD = DATA.cmd || null;  // a team commander's own page: { team, code }
   "use strict";
   var L = DATA.latest, lessons = L.lessons;
 
@@ -854,7 +860,7 @@ function startApp(DATA, TEAM) {
       .concat(dutyOn(selected).map(function (d) { return { h: d.hour + 0.2, html: dutyCard(d) }; }))
       .sort(function (a, b) { return a.h - b.h; });
     document.getElementById("daylist").innerHTML = (items.length ? items.map(function (i) { return i.html; }).join("") : '<div class="empty">אין לך שיעורים ביום הזה.</div>') +
-      (HQ || (API && otherOwner()) ? "" : '<div id="noteslot"><button type="button" class="addnote" id="addnote">＋ תזכורת אישית ליום הזה</button></div>');
+      (HQ || CMD || (API && otherOwner()) ? "" : '<div id="noteslot"><button type="button" class="addnote" id="addnote">＋ תזכורת אישית ליום הזה</button></div>');
   }
   // Reminders kept in the unit's private store (Apps Script), when the site has its address.
   var API = DATA.api || "", HQ = DATA.hq || null, HQALL = [];
@@ -880,7 +886,7 @@ function startApp(DATA, TEAM) {
     return list.map(function (x) { var n = { id: x.id, hour: x.hour, text: x.text }; if (x.date) n.date = x.date; else n.dow = x.dow; return n; });
   }
   function syncNotes() {
-    if (HQ) return Promise.resolve();  // administration staff do not see personal reminders
+    if (HQ || CMD) return Promise.resolve();  // administration staff and commanders have no personal reminders here
     if (!API || !myToken()) return Promise.resolve();
     return call({ action: "list", name: ME, token: myToken() }).then(function (r) {
       if (r.ok) { notes = fromServer(r.reminders); saveNotes(); renderDay(); if (!document.getElementById("view-week").hidden) renderWeek(); }
@@ -953,6 +959,7 @@ function startApp(DATA, TEAM) {
     var out = new Uint8Array(raw.length); for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i); return out;
   }
   function pushSetup() {
+    if (CMD) return;  // commanders turn on the team's notifications in their bar instead
     var box = document.getElementById("pushbox");
     if (!box || HQ || !API) return;
     if (otherOwner()) { box.innerHTML = '<p class="pushhint">🔗 הטלפון הזה מקושר למערכת של ' + esc(owner()) + '.</p>'; return; }
@@ -1312,7 +1319,7 @@ function startApp(DATA, TEAM) {
     body.innerHTML = dutySlots(DT.grade, day[DT.grade], ME, !!API) + '<p class="muted" style="margin:0;font-size:.8rem">הרשימה נבנית כל בוקר מהמערכת של כל הצוות: רק מי שפנוי באותה שעה, ובחלוקה שווה לפי טבלת צדק חודשית. אם מישהו מקבל שיעור, הוא מוחלף לבד בעדכון הבא.' + (API ? ' כל אחד מהצוות יכול ללחוץ על שורה ולשנות אותה ידנית, למשל כשמישהו בשמירות.' : "") + '</p>' + leadReport();
     if (API) dutyBind(body, { api: API, date: todayISO, duty: DUTY, redraw: renderDuty, askCode: !!(TEAM || DATA.hq),
       by: DATA.hq ? "אנשי מנהלה" : (owner() || DATA.teacher || ""),
-      code: function () { return (DATA.hq && DATA.hq.code) || (TEAM ? dGet("duty-code") : "") || ""; }, saveCode: function (c) { dSet("duty-code", c); },
+      code: function () { return (DATA.hq && DATA.hq.code) || (CMD && CMD.code) || (TEAM ? dGet("duty-code") : "") || ""; }, saveCode: function (c) { dSet("duty-code", c); },
       device: function () { var o = owner(); var t = o && dGet("dev-" + o); return t ? { name: o, token: t } : null; } });
   }
   // Team leads see their team's monthly report under the list.
@@ -1325,7 +1332,7 @@ function startApp(DATA, TEAM) {
 
   // ---- tabs
   function show(view) {
-    ["day", "week", "cls", "duty", "agenda", "hist", "team"].forEach(function (v) {
+    ["day", "week", "cls", "duty", "agenda", "hist", "team", "crem", "cchg"].forEach(function (v) {
       document.getElementById("view-" + v).hidden = v !== view;
       document.getElementById("tab-" + v).setAttribute("aria-selected", String(v === view));
     });
@@ -1336,6 +1343,47 @@ function startApp(DATA, TEAM) {
     if (view === "team") renderTeam();
     if (view === "cls") renderCls();
     if (view === "duty") renderDuty();
+    if (view === "crem") renderCmdRem();
+    if (view === "cchg") renderCmdChg();
+  }
+  // ---- a team commander's own app: their timetable, plus the team's reminders and changes
+  var CREM = null;
+  function renderCmdRem() {
+    var box = document.getElementById("crem-body");
+    if (!CMD) return;
+    if (!API) { box.innerHTML = '<div class="empty">התזכורות יופיעו כשהמנוע יופעל.</div>'; return; }
+    if (!CREM) {
+      box.innerHTML = '<p class="muted">טוען…</p>';
+      fetch(API, { method: "POST", body: JSON.stringify({ action: "cmd_team", code: CMD.code, team: CMD.team }) }).then(function (r) { return r.json(); })
+        .then(function (r) { CREM = r.ok ? r.reminders : []; renderCmdRem(); }).catch(function () { CREM = []; renderCmdRem(); });
+      return;
+    }
+    var dow = new Date(todayISO + "T12:00:00").getDay();
+    var items = CREM.filter(function (x) { return x.date ? x.date === todayISO : x.dow === dow; }).sort(function (a, b) { return a.hour - b.hour; });
+    box.innerHTML = '<section class="hqday"><h3>תזכורות הצוות להיום</h3>' + (items.length ? items.map(function (x) {
+      return '<div class="r"><b>שעה ' + x.hour + '</b><span>' + esc(x.text) + '</span><span class="who">' + esc(x.name) + '</span></div>';
+    }).join("") : '<p class="muted" style="margin:0">אין תזכורות היום.</p>') + '</section>';
+  }
+  function renderCmdChg() {
+    var box = document.getElementById("cchg-body"), BIG = /מילוי מקום|לא מתקיים|נוסף|ביטול|כיתת חינוך/, seen = {}, rows = [];
+    (TEAM ? TEAM.members : []).forEach(function (m) {
+      ((m.data && m.data.changelog) || []).forEach(function (c) {
+        if (c.date !== todayISO || !BIG.test(c.kind || "")) return;
+        var t = String(c.text || ""), mm = t.match(/^(.+?)\s*<-\s*(.+)$/), text = mm ? mm[2] + " במקום " + mm[1] : t, k = m.name + c.kind + text;
+        if (!seen[k]) { seen[k] = 1; rows.push('<div class="r"><b>' + esc(m.name) + '</b><span>' + esc(c.kind) + ': ' + esc(text) + '</span></div>'); }
+      });
+    });
+    box.innerHTML = '<section class="hqday"><h3>שינויים במערכת של הצוות היום</h3>' + (rows.length ? rows.join("") : '<p class="muted" style="margin:0">אין שינויים היום.</p>') + '</section>';
+  }
+  if (CMD) {
+    document.getElementById("tab-crem").hidden = false; document.getElementById("tab-cchg").hidden = false;
+    var sw = document.getElementById("switch"), sw2 = sw.cloneNode(true);  // drop the plain "switch" handler
+    sw2.textContent = "יציאה ממצב מפקד"; sw.parentNode.replaceChild(sw2, sw);
+    sw2.onclick = function () { try { localStorage.removeItem("cmd"); localStorage.removeItem("me"); } catch (e) {} location.reload(); };
+    var cmb = document.createElement("div"); cmb.className = "hqbar";
+    cmb.innerHTML = '<b>🎖️ מפקד ' + esc(CMD.team) + '</b><div id="cmd-push" class="btns"></div>';
+    document.querySelector("#app header").appendChild(cmb);
+    if (window.cmdPushUI) window.cmdPushUI(API, { name: CMD.team }, CMD.code);
   }
   document.querySelector(".tabs").addEventListener("click", function (e) {
     var b = e.target.closest("button[data-view]"); if (b) show(b.getAttribute("data-view"));
@@ -1353,7 +1401,9 @@ function startApp(DATA, TEAM) {
   }).catch(function () {});
   setInterval(renderNow, 60000);
   var saved = store("view");
-  if (saved === "week" || saved === "hist" || saved === "agenda" || saved === "cls" || saved === "duty" || (saved === "team" && TEAM)) show(saved);
+  if (saved === "week" || saved === "hist" || saved === "agenda" || saved === "cls" || saved === "duty" || (saved === "team" && TEAM) ||
+      ((saved === "crem" || saved === "cchg") && CMD)) show(saved);
+  else if (CMD) show("week");
 }
 
 (function () {
@@ -1419,13 +1469,16 @@ function startApp(DATA, TEAM) {
     try { var c = JSON.parse(localStorage.getItem("cmd") || "null"); if (c && c.team === team && Date.now() - c.at < 30 * 864e5) return c; } catch (e) {}
     return null;
   }
+  window.cmdPushUI = function (api, team, code) { cmdPush(api, team, code); };
   function cmdOpen(d, team) {
     if (!team) return;
+    // A commander with a timetable on the school site gets the full app; the others keep the board.
+    var open = function (code) { if (team.commander_id) { set("me", team.commander_id); location.reload(); } else cmdBoard(d, team, code); };
     var box = document.getElementById("hq");
     document.getElementById("plist").hidden = true; document.getElementById("psearch").hidden = true;
     document.getElementById("hq-go").hidden = true; document.getElementById("hq-bar").hidden = true; box.hidden = false;
     var sess = cmdSession(team.name);
-    if (sess) { cmdBoard(d, team, sess.code); return; }
+    if (sess) { open(sess.code); return; }
     box.innerHTML = '<form class="noteform" id="cmd-form" style="border-color:var(--accent)"><p style="margin:0;font-weight:600">🎖️ ' + esc(team.commander) + ' · מפקד ' + esc(team.name) + '</p>' +
       '<label for="cmd-code">קוד<input type="password" id="cmd-code" inputmode="numeric" autocomplete="off"></label>' +
       '<div class="btns"><button type="submit" class="save" style="background:var(--accent);border-color:var(--accent)">כניסה</button><button type="button" id="cmd-back">חזרה</button></div><p class="hint" id="cmd-err"></p></form>';
@@ -1436,7 +1489,7 @@ function startApp(DATA, TEAM) {
       sha256("commander:" + code).then(function (h) {
         if (!d.cmd_hash || h !== d.cmd_hash) { document.getElementById("cmd-err").textContent = "הקוד לא נכון."; return; }
         set("cmd", JSON.stringify({ team: team.name, code: code, at: Date.now() }));
-        cmdBoard(d, team, code);
+        open(code);
       });
     };
     document.getElementById("cmd-code").focus();
@@ -1638,6 +1691,20 @@ function startApp(DATA, TEAM) {
 
   json("data/staff.json").then(function (st) {
     var person = st.people.filter(function (p) { return p.id === me; })[0];
+    var cmdTeam = !person && (st.teams || []).filter(function (t) { return t.commander_id === me; })[0];
+    var cmdSess = cmdTeam && cmdSession(cmdTeam.name);
+    if (cmdSess) {  // a team commander: their own timetable, with the team's tabs
+      return json("data/" + encodeURIComponent(me) + ".json").then(function (d) {
+        document.documentElement.dir = "rtl"; document.documentElement.lang = "he";
+        document.title = "המערכת של " + d.teacher.split(" ").slice(-1)[0];
+        app.hidden = false;
+        d.cmd = { team: cmdTeam.name, code: cmdSess.code }; d.team_name = cmdTeam.name; d.api = d.api || st.api;
+        return Promise.all(cmdTeam.members.map(function (m) {
+          return json("data/" + encodeURIComponent(m.id) + ".json").then(function (x) { return { name: m.name, data: x }; },
+            function () { return { name: m.name, data: null }; });
+        })).then(function (members) { startApp(d, { name: cmdTeam.name, members: members }); });
+      });
+    }
     if (!person) { set("me", null); showPicker(); return; }
     return unlock(person).then(function () {
       return json("data/" + encodeURIComponent(me) + ".json").then(function (d) {
