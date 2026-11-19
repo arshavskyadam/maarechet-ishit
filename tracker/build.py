@@ -421,18 +421,15 @@ def build_duty(raw, now, people, team_defs):
 
 def class_releases(raw, date, grade, team, members, busy, teaching, slots, people, old, rel_count, rel_last):
     """Who releases each class of the grade at the end of its day: the homeroom instructor when free
-    (or teaching that very class then); otherwise a free team member, the one with the fewest
-    releases this month. Someone on yard duty in that period, or already releasing another class
-    then, isn't picked."""
+    (or teaching that very class then); otherwise a free member of the grade's own team, the one
+    with the fewest releases this month, who isn't releasing another class at the same time.
+    Being on yard duty then is fine. Only the grade's team: never an instructor of another grade."""
     homeroom = {}
     for p in people:
+        if p["name"] not in members:
+            continue
         for h in p.get("homerooms", []):
             homeroom.setdefault(class_key(h), p["name"])
-    on_duty = {}
-    for s in slots:
-        if not s.get("role"):
-            for c in s["people"]:
-                on_duty.setdefault(s["hour"], set()).add(c)
     kept = {r["class"]: r for r in old}
     out, taken = [], {}
     classes = [c["name"] for c in raw["classes"] if duty_group(grade_of(c["name"])) == grade]
@@ -451,7 +448,7 @@ def class_releases(raw, date, grade, team, members, busy, teaching, slots, peopl
         if hr and free(hr):
             row.update(people=[hr], why="מחנך")
         else:
-            cands = [m for m in members if m != hr and free(m) and m not in on_duty.get(h, set()) and m not in taken.get(h, set())]
+            cands = [m for m in members if m != hr and free(m) and m not in taken.get(h, set())]
             prev = kept.get(cls, {})
             keep = [x for x in prev.get("people", []) if prev.get("why") == "פנוי" and x in cands]
             if keep:
