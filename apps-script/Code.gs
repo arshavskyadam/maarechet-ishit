@@ -162,6 +162,7 @@ var GRADES = ['ט', 'י', 'יא', 'יב', 'יג', 'יד', 'מכללה'];  // 13 
 function dutyGet(req) {
   var date = String(req.date || '');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { ok: false, error: 'bad date' };
+  try { countVisit(clean(req.who)); } catch (err) {}  // the visit counter must never break the page
   var rows = ensureSheet('תורנויות ידניות', DUTY_HEAD).getDataRange().getDisplayValues().slice(1);
   return { ok: true, edits: rows.filter(function (r) { return r[0] === date; }).map(function (r) {
     return { grade: r[1], hour: Number(r[2]), role: r[3], person: r[4], note: r[5], by: r[6] };
@@ -198,6 +199,26 @@ function dutySet(req) {
     tab.appendRow(["'" + date, grade, "'" + hour, role, person, clean(req.note).slice(0, 40), clean(req.by).slice(0, 40), new Date()]);
   }
   return { ok: true };
+}
+
+/** Who opened the site today: one row a day in "כניסות" (date, how many, who), written only when
+ *  someone new comes in that day. The names of the day are kept in the script properties. */
+function countVisit(who) {
+  if (!who || who.length > 40) return;
+  var today = Utilities.formatDate(new Date(), 'Asia/Jerusalem', 'yyyy-MM-dd');
+  var props = PropertiesService.getScriptProperties(), key = 'visits:' + today;
+  var names = JSON.parse(props.getProperty(key) || '[]');
+  if (names.indexOf(who) >= 0) return;
+  if (!staffList().some(function (p) { return p.name === who; }) && who.indexOf('מפקד ') !== 0) return;
+  names.push(who);
+  props.setProperty(key, JSON.stringify(names));
+  var tab = ensureSheet('כניסות', ['תאריך', 'כמה נכנסו', 'מי']);
+  var last = tab.getLastRow();
+  var row = last > 1 && tab.getRange(last, 1).getDisplayValue() === today ? last : last + 1;
+  tab.getRange(row, 1, 1, 3).setValues([["'" + today, names.length, names.join(', ')]]);
+  if (row !== last) {  // a new day: drop the names kept for older days
+    props.getKeys().forEach(function (k) { if (k.indexOf('visits:') === 0 && k !== key) props.deleteProperty(k); });
+  }
 }
 
 // ---- data

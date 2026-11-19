@@ -443,7 +443,7 @@ function dGet(k) { try { return localStorage.getItem(k); } catch (e) { return nu
 function dSet(k, v) { try { v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} }
 function dutyEdits(api, date) {
   if (!api) return Promise.resolve([]);
-  return fetch(api, { method: "POST", body: JSON.stringify({ action: "duty_get", date: date }) }).then(function (r) { return r.json(); })
+  return fetch(api, { method: "POST", body: JSON.stringify({ action: "duty_get", date: date, who: window.DUTY_WHO || "" }) }).then(function (r) { return r.json(); })
     .then(function (r) { return r.ok ? r.edits : []; }).catch(function () { return []; });
 }
 // Puts hand-made changes on top of the hourly list, so they show at once and not only after the next update.
@@ -571,11 +571,20 @@ function subIn(l, who) {
   return "";
 }
 // A lesson that doesn't happen because the class sits an exam or has an event instead: the class
-// is busy, not free. Returns that change ({ type, text }), or null.
-function examIn(l) {
+// is busy, not free. From the lesson's own changes, or else from the exams and events entered for
+// that class on that day and hour. Returns { type, text }, or null.
+function examIn(l, agenda) {
   if (!l || l.status !== "cancelled") return null;
-  return (l.changes || []).filter(function (c) { return /מבחן|אירוע|טיול|פעילות/.test(c.type || ""); })[0] || null;
+  var c = (l.changes || []).filter(function (c) { return /מבחן|אירוע|טיול|פעילות/.test(c.type || ""); })[0];
+  if (c) return c;
+  var a = (agenda || []).filter(function (a) {
+    var h = a.hours || [0, 99];
+    return a.date === l.date && l.hour >= h[0] && l.hour <= h[1] && (a.my_classes || []).some(function (x) { return (l.classes || []).indexOf(x) >= 0; });
+  })[0];
+  return a ? { type: a.kind, text: a.title } : null;
 }
+// "ביטול" when the school site says so, else "לא מתקיים".
+function offLabel(l) { return (l.changes || []).some(function (c) { return /ביטול/.test(c.type || ""); }) ? "ביטול" : "לא מתקיים"; }
 var REP_MONTHS = ["ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני", "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר"];
 function dutyReport(rep, team, month) {
   function e(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
@@ -692,7 +701,7 @@ function startApp(DATA, TEAM) {
     var items = [], used = [];
     // Upcoming lessons that are cancelled or carry a change marker, merged over back-to-back periods.
     blocks(lessons.filter(function (l) { return l.date >= todayISO && (l.status === "cancelled" || l.changes.length); })).forEach(function (b) {
-      var sub = subIn(b, ME), off = b.status === "cancelled" && !sub && !examIn(b);
+      var sub = subIn(b, ME), off = b.status === "cancelled" && !sub && !examIn(b, AG);
       var per = b.firstHour === b.lastHour ? "שעה " + b.firstHour : "שעות " + range(b.firstHour, b.lastHour);
       var reasons = b.changes.map(function (c) { return fill(c.text); }).filter(function (t, i, a) { return a.indexOf(t) === i; });
       var hits = detectedFor(b), seen = hits[0];
@@ -763,16 +772,17 @@ function startApp(DATA, TEAM) {
 
   function card(b) {
     var per = b.firstHour === b.lastHour ? "שעה " + b.firstHour : "שעות " + range(b.firstHour, b.lastHour);
-    var sub = subIn(b, ME), ex = examIn(b), off = b.status === "cancelled" && !sub && !ex;
+    var sub = subIn(b, ME), ex = examIn(b, AG), off = b.status === "cancelled" && !sub && !ex;
     var h = '<article class="lesson' + (off ? " cancelled" : b.changes.length ? " changed" : "") + '">';
-    h += '<div class="when"><span class="per">' + per + '</span>' + (off ? '<span class="off-tag">לא מתקיים</span>' : sub ? '<span class="sub-tag">מוחלף</span>' : ex ? '<span class="sub-tag">' + esc(ex.type) + '</span>' : "") + '<span class="t">' + esc(b.start) + '</span><span class="t2">עד ' + esc(b.end) + '</span></div>';
+    h += '<div class="when"><span class="per">' + per + '</span>' + (off ? '<span class="off-tag">' + offLabel(b) + '</span>' : sub ? '<span class="sub-tag">מוחלף</span>' : ex ? '<span class="sub-tag">' + esc(ex.type) + '</span>' : "") + '<span class="t">' + esc(b.start) + '</span><span class="t2">עד ' + esc(b.end) + '</span></div>';
     h += '<div class="what"><h3>' + esc(b.subject) + '</h3>';
     agendaHits(b).filter(function (a) { return !b.changes.some(function (c) { return c.text.trim() === a.title.trim(); }); }).forEach(function (a) {
       h += '<div class="change"><b>' + esc(a.kind) + '</b><span>' + esc(a.title) + '</span></div>';
     });
     if (off && !b.changes.length) h += '<div class="change bad"><b>לא מתקיים</b><span>השיעור הוסר מהמערכת השבוע</span></div>';
     if (sub) h += '<div class="change"><b>השיעור מתקיים</b><span>' + esc(sub) + ' ממלא/ת את מקומך. לכיתה אין שעה חופשית.</span></div>';
-    if (ex) h += '<div class="change"><b>' + esc(ex.type) + ' במקום השיעור</b><span>השיעור שלך לא מתקיים, אבל הכיתה לא פנויה.</span></div>';
+    if (ex && !b.changes.some(function (c) { return c.text === ex.text; })) h += '<div class="change"><b>' + esc(ex.type) + ' במקום השיעור</b><span>' + esc(ex.text) + '</span></div>';
+    else if (ex) h += '<div class="change"><b>' + esc(ex.type) + ' במקום השיעור</b><span>השיעור שלך לא מתקיים, אבל הכיתה לא פנויה.</span></div>';
     b.changes.forEach(function (c) {
       h += '<div class="change' + (off || BAD.test(c.type + c.text) ? " bad" : "") + '"><b>' + esc(c.type) + '</b><span>' + esc(fill(c.text)) + '</span></div>';
     });
@@ -1105,8 +1115,8 @@ function startApp(DATA, TEAM) {
         if (!here.length && mine.length) { h += '<td class="slot note" data-date="' + d.date + '">' + nh + '</td>'; return; }
         if (!all.length) { h += '<td></td>'; return; }
         if (!here.length) { h += '<td class="dim">' + all.map(function (l) { return esc(l.classes.join(", ")); }).join("<br>") + '</td>'; return; }
-        var allOff = here.every(function (l) { return l.status === "cancelled" && !subIn(l, ME) && !examIn(l); });
-        h += '<td class="slot' + (allOff ? " cancelled" : here.some(function (l) { return l.changes.length; }) ? " changed" : "") + '" data-date="' + d.date + '">' + here.map(function (l) { var sb = subIn(l, ME); return '<span class="s">' + esc(l.subject) + '</span>' + esc(l.classes.join(", ")) + (sb ? '<br><span class="sub-tag">🔄 ' + esc(sb) + ' במקומך</span>' : examIn(l) ? '<br><span class="sub-tag">📝 ' + esc(examIn(l).type) + ' במקום השיעור</span>' : l.status === "cancelled" ? ' <span class="off-tag">לא מתקיים</span>' : ""); }).join("<hr style='border:0;border-top:1px solid var(--line);margin:3px 0'>") + nh + '</td>';
+        var allOff = here.every(function (l) { return l.status === "cancelled" && !subIn(l, ME) && !examIn(l, AG); });
+        h += '<td class="slot' + (allOff ? " cancelled" : here.some(function (l) { return l.changes.length; }) ? " changed" : "") + '" data-date="' + d.date + '">' + here.map(function (l) { var sb = subIn(l, ME); return '<span class="s">' + esc(l.subject) + '</span>' + esc(l.classes.join(", ")) + (sb ? '<br><span class="sub-tag">🔄 ' + esc(sb) + ' במקומך</span>' : examIn(l, AG) ? '<br><span class="sub-tag">📝 ' + esc(examIn(l, AG).type) + ': ' + esc(examIn(l, AG).text) + '</span>' : l.status === "cancelled" ? ' <span class="off-tag">' + offLabel(l) + '</span>' : ""); }).join("<hr style='border:0;border-top:1px solid var(--line);margin:3px 0'>") + nh + '</td>';
       });
       h += '</tr>';
     });
@@ -1407,9 +1417,10 @@ function startApp(DATA, TEAM) {
       wk.days.forEach(function (d) {
         var here = inWeek.filter(function (l) { return l.date === d.date && l.hour === hr; });
         if (!here.length) { h += '<td></td>'; return; }
-        var off = here.every(function (l) { return l.status === "cancelled" && !subIn(l, m.name) && !examIn(l); });
+        var mag = (L2.agenda || []);
+        var off = here.every(function (l) { return l.status === "cancelled" && !subIn(l, m.name) && !examIn(l, mag); });
         h += '<td class="slot' + (off ? " cancelled" : here.some(function (l) { return l.changes.length || (l.status && l.status !== "regular"); }) ? " changed" : "") + '">' +
-          here.map(function (l) { var sb = subIn(l, m.name); return '<span class="s">' + esc(l.subject) + '</span>' + esc(l.classes.join(", ")) + (l.rooms && l.rooms.length ? '<br><span class="muted">' + esc(l.rooms.join(", ")) + '</span>' : "") + (sb ? '<br><span class="sub-tag">🔄 ' + esc(sb) + ' במקומו</span>' : examIn(l) ? '<br><span class="sub-tag">📝 ' + esc(examIn(l).type) + ' במקום השיעור</span>' : l.status === "cancelled" ? ' <span class="off-tag">לא מתקיים</span>' : ""); }).join("<hr style='border:0;border-top:1px solid var(--line);margin:3px 0'>") + '</td>';
+          here.map(function (l) { var sb = subIn(l, m.name); return '<span class="s">' + esc(l.subject) + '</span>' + esc(l.classes.join(", ")) + (l.rooms && l.rooms.length ? '<br><span class="muted">' + esc(l.rooms.join(", ")) + '</span>' : "") + (sb ? '<br><span class="sub-tag">🔄 ' + esc(sb) + ' במקומו</span>' : examIn(l, mag) ? '<br><span class="sub-tag">📝 ' + esc(examIn(l, mag).type) + ': ' + esc(examIn(l, mag).text) + '</span>' : l.status === "cancelled" ? ' <span class="off-tag">' + offLabel(l) + '</span>' : ""); }).join("<hr style='border:0;border-top:1px solid var(--line);margin:3px 0'>") + '</td>';
       });
       h += '</tr>';
     });
@@ -1438,6 +1449,8 @@ function startApp(DATA, TEAM) {
   renderStrip(); renderDay(); renderNow();
   syncNotes();
   pushSetup();
+  // who opened the site today, for the daily visit count (not administration staff)
+  window.DUTY_WHO = HQ ? "" : CMD ? "מפקד " + DATA.teacher : (owner() || DATA.teacher || "");
   getJSON("data/duty.json").then(function (d) {
     return dutyEdits(DATA.api || "", todayISO).then(function (edits) { dutyApply(d, todayISO, edits); return d; });
   }).then(function (d) {
