@@ -1053,9 +1053,9 @@ function startApp(DATA, TEAM) {
   function match(l) {
     return (!fc.value || l.classes.indexOf(fc.value) >= 0) && (!ft.value || l.co_teachers.some(function (c) { return c.name === ft.value; }));
   }
-  // Every period of the school day, 1 to 9 (and 0 or 10 when there is a lesson then), even an empty one.
+  // Every period of the school day, 0 to 10, even an empty one.
   function allHours(hours) {
-    var nums = Object.keys(hours).map(Number), lo = Math.min.apply(null, nums.concat([1])), hi = Math.max.apply(null, nums.concat([9]));
+    var nums = Object.keys(hours).map(Number), lo = Math.min.apply(null, nums.concat([0])), hi = Math.max.apply(null, nums.concat([10]));
     var hs = [];
     for (var x = lo; x <= hi; x++) {
       if (!hours[x] && NH[x]) hours[x] = NH[x][1] + "–" + NH[x][2];
