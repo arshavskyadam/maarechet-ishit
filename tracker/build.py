@@ -305,13 +305,18 @@ def build_duty(raw, now, people, team_defs):
     today = now.date().isoformat()
     path = DOCS / "data" / "duty.json"
     prev = load_json(path, {}).get("days", {})
-    busy, teaching = {}, {}
+    busy, teaching, absent = {}, {}, {}
     for person in people:
         data = load_json(DOCS / "data" / f"{person['id']}.json", {})
         for l in data.get("latest", {}).get("lessons", []):
             if l.get("status") != "cancelled" and l.get("hour") is not None:
                 busy.setdefault(person["name"], set()).add((l["date"], l["hour"]))
                 teaching.setdefault(person["name"], {}).setdefault((l["date"], l["hour"]), set()).update(class_key(c) for c in l.get("classes", []))
+            # Someone stands in for them in a lesson that day (שמירות, a course, sick...): away all day.
+            for c in l.get("changes", []):
+                m = re.match(r"\s*(.+?)\s*<-", c.get("text", ""))
+                if "מילוי מקום" in (c.get("type") or "") and m and m.group(1).strip() == person["name"]:
+                    absent.setdefault(l["date"], set()).add(person["name"])
     known = {p["name"] for p in people}
     # Only today's list: it is made on the first run of the morning and kept up to date through the day.
     dates = [today] if today in raw["days"] and now.weekday() in (6, 0, 1, 2, 3) else []
@@ -361,6 +366,7 @@ def build_duty(raw, now, people, team_defs):
                 taken_at.setdefault(h, set()).add(c)
         for team, t in team_defs.items():
             members = [m for m in t.get("members", []) if m in known]
+            away = absent.get(date, set())
             if not members:
                 continue
             for grade in dict.fromkeys(duty_group(g) for g in t.get("grades", [])):
@@ -388,9 +394,9 @@ def build_duty(raw, now, people, team_defs):
                         slots.append(slot)
                         continue
                     if role:
-                        cands = [m for m in members]  # the whole team is out of class during the break
+                        cands = [m for m in members if m not in away]  # the whole team is out of class during the break
                     else:
-                        cands = [m for m in members if (date, h) not in busy.get(m, set())]
+                        cands = [m for m in members if (date, h) not in busy.get(m, set()) and m not in away]
                     keep = [x for x in old.get((h, role), []) if x in cands and x not in taken]
                     chosen = keep[:1] or [x for x in [pick(cands, date, f"{grade}{h}{role}", taken)] if x]
                     for c in chosen:
@@ -401,14 +407,15 @@ def build_duty(raw, now, people, team_defs):
                     if role:
                         slot["role"] = role
                     slots.append(slot)
-                releases = class_releases(raw, date, grade, team, members, busy, teaching, slots, people,
+                releases = class_releases(raw, date, grade, team, members, busy, teaching, away, people,
                                           prev.get(date, {}).get(grade, {}).get("releases", []), rel_count, rel_last)
                 day_out[grade] = {"team": team, "slots": sorted(slots, key=lambda x: x["hour"]), "releases": releases,
                                   "hours": sum(1 for h, r in wanted if not r), "free": free_hours, "members": members,
-                                  "free_at": {str(h): [m for m in members if (date, h) not in busy.get(m, set())] for h, r in wanted if not r}}
+                                  "free_at": {str(h): [m for m in members if (date, h) not in busy.get(m, set()) and m not in away] for h, r in wanted if not r},
+                                  "away": sorted(away & set(members))}
         days[date] = day_out
     write_json(path, {"updated": now.isoformat(timespec="minutes"), "lunch_roles": LUNCH_ROLES,
-                      "days": {d: {g: {"team": v["team"], "slots": v["slots"], "members": v["members"], "free_at": v["free_at"], "releases": v["releases"]}
+                      "days": {d: {g: {"team": v["team"], "slots": v["slots"], "members": v["members"], "free_at": v["free_at"], "releases": v["releases"], "away": v["away"]}
                                    for g, v in day.items()} for d, day in days.items()}})
     # Keep about two months of days; the monthly reports below are kept for good.
     hist.update(days)
@@ -419,7 +426,7 @@ def build_duty(raw, now, people, team_defs):
     print(f"duty lists for {len(dates)} days")
 
 
-def class_releases(raw, date, grade, team, members, busy, teaching, slots, people, old, rel_count, rel_last):
+def class_releases(raw, date, grade, team, members, busy, teaching, away, people, old, rel_count, rel_last):
     """Who releases each class of the grade at the end of its day: the homeroom instructor when free
     (or teaching that very class then); otherwise a free member of the grade's own team, the one
     with the fewest releases this month, who isn't releasing another class at the same time.
@@ -441,6 +448,8 @@ def class_releases(raw, date, grade, team, members, busy, teaching, slots, peopl
                          "regular": (info.get("regular_end") or {}).get("end", "")})
 
     def free(m, r):
+        if m in away:
+            return False
         return (date, r["hour"]) not in busy.get(m, set()) or class_key(r["class"]) in teaching.get(m, {}).get((date, r["hour"]), set())
     # First every homeroom instructor who can release their own class...
     for r in rows:
@@ -462,7 +471,8 @@ def class_releases(raw, date, grade, team, members, busy, teaching, slots, peopl
             if pick:
                 rel_count[pick] = rel_count.get(pick, 0) + 1
                 rel_last[pick] = date
-        r.update(people=[pick] if pick else [], why="פנוי", note=("המחנך/ת בשיעור" if r["homeroom"] else "אין מחנך/ת רשום/ה"))
+        r.update(people=[pick] if pick else [], why="פנוי",
+                 note=("מדריך/ת הכיתה נעדר/ת היום" if r["homeroom"] in away else "מדריך/ת הכיתה בשיעור" if r["homeroom"] else "אין מדריך/ת כיתה רשום/ה"))
         if pick:
             taken.setdefault(r["hour"], set()).add(pick)
     out = rows
