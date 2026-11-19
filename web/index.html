@@ -1149,7 +1149,7 @@ function startApp(DATA, TEAM) {
     var hist = (DATA.history || []).filter(function (d) { return d.lessons && d.lessons.length; }).sort(function (a, b) { return a.date < b.date ? 1 : -1; });
     document.getElementById("hist").innerHTML = hist.length ? hist.map(function (d) {
       return '<details' + (d.date === todayISO ? " open" : "") + '><summary><span>' + esc(d.weekday) + ' <span class="mono">' + dm(d.date) + '</span>' + (d.date === todayISO ? " · היום" : d.date > todayISO ? " · מתוכנן" : "") + '</span><span class="muted">' + active(d.lessons).length + ' שעות</span></summary><ul>' +
-        d.lessons.map(function (l) { return '<li><span class="mono">' + l.hour + ' · ' + esc(l.start) + '</span> ' + esc(l.subject) + ' — ' + esc(l.classes.join(", ")) + (l.co_teachers.length ? ' <span class="muted">(עם ' + esc(l.co_teachers.map(function (c) { return c.name; }).join(", ")) + ')</span>' : "") + (l.status === "cancelled" ? ' <b style="color:var(--bad)">לא התקיים</b>' : "") + (l.changes.length ? ' <b style="color:var(--warn)">' + esc(l.changes.map(function (c) { return c.type; }).join(", ")) + '</b>' : "") + '</li>'; }).join("") +
+        d.lessons.map(function (l) { return '<li><span class="mono">' + l.hour + ' · ' + esc(l.start) + '</span> ' + esc(l.subject) + ' — ' + esc(l.classes.join(", ")) + (l.co_teachers.length ? ' <span class="muted">(עם ' + esc(l.co_teachers.map(function (c) { return c.name; }).join(", ")) + ')</span>' : "") + (l.status === "cancelled" ? (subIn(l, ME) ? ' <b style="color:var(--warn)">' + esc(subIn(l, ME)) + ' במקומך</b>' : examIn(l, AG) ? ' <b style="color:var(--warn)">' + esc(examIn(l, AG).type) + ' במקום השיעור</b>' : ' <b style="color:var(--bad)">לא התקיים</b>') : "") + (l.changes.length ? ' <b style="color:var(--warn)">' + esc(l.changes.map(function (c) { return c.type; }).join(", ")) + '</b>' : "") + '</li>'; }).join("") +
         '</ul></details>';
     }).join("") : '<div class="empty">היומן יתמלא אחרי הבדיקות היומיות.</div>';
   }
@@ -1272,9 +1272,11 @@ function startApp(DATA, TEAM) {
     var week = f.days.filter(function (d) { return d.date >= s0 && d.date <= s4; });
     document.getElementById("cls-body").innerHTML = CL.mode === "day" ? clsDay(f, CL.day) : clsWeek(f, week);
   }
+  // A period with no lesson left is "off" only when no exam or event took its place.
+  function slotEvent(sl) { return sl.changes.filter(function (c) { return /מבחן|אירוע|טיול|פעילות/.test(c.type || ""); })[0]; }
   function slotState(sl) {
-    var off = !sl.lessons.length && sl.removed.length;
-    return { off: off, chg: !off && (sl.changes.length || sl.removed.length) };
+    var ev = slotEvent(sl), off = !sl.lessons.length && sl.removed.length && !ev;
+    return { off: off, ev: ev, chg: !off && (sl.changes.length || sl.removed.length) };
   }
   function clsDay(f, date) {
     var day = f.days.filter(function (d) { return d.date === date; })[0] || { holidays: [] };
@@ -1294,7 +1296,7 @@ function startApp(DATA, TEAM) {
       var title = subs.length > 2 ? subs.slice(0, 2).join(" / ") + " +" + (subs.length - 2) : subs.join(" / ") || (x.changes[0] ? fill(x.changes[0].text) : "");
       // One group out of several (e.g. one math level) dropped: name that group; the rest goes on.
       var gone = x.lessons.length ? x.removed.filter(function (r) { return !x.changes.some(function (c) { return String(c.text || "").indexOf(r.teacher) >= 0 && /מילוי מקום/.test(c.type || ""); }); }) : [];
-      var flag = st.off ? "לא מתקיים" : gone.length ? "בוטל: " + gone[0].subject + " · " + gone[0].teacher + (gone.length > 1 ? " ועוד " + (gone.length - 1) : "") + " · השאר כרגיל"
+      var flag = st.off ? "לא מתקיים" : st.ev && !x.lessons.length ? st.ev.type + " במקום השיעור: " + fill(st.ev.text) : gone.length ? "בוטל: " + gone[0].subject + " · " + gone[0].teacher + (gone.length > 1 ? " ועוד " + (gone.length - 1) : "") + " · השאר כרגיל"
         : x.changes.length ? x.changes[0].type + ": " + fill(x.changes[0].text) : x.removed.length ? "חלק מהשיעורים בוטלו" : "";
       var more = shown.map(function (l) { return '<div class="ln"><b>' + esc(l.subject) + '</b><span>' + esc(l.teacher) + (l.room ? " · חדר " + esc(l.room) : "") + '</span></div>'; }).join("") +
         x.changes.slice(st.off ? 0 : 1).map(function (c) { return '<div class="ln"><b style="color:var(--warn)">' + esc(c.type) + '</b><span>' + esc(fill(c.text)) + '</span></div>'; }).join("") +
@@ -1323,7 +1325,7 @@ function startApp(DATA, TEAM) {
         if (!x) { h += '<td class="e"></td>'; return; }
         var st = slotState(x), shown = x.lessons.length ? x.lessons : x.removed;
         var subs = shown.map(function (l) { return l.subject; }).filter(function (v, i, a) { return v && a.indexOf(v) === i; });
-        var t = subs[0] || (x.changes[0] ? x.changes[0].type : "");
+        var t = st.ev && !x.lessons.length ? "📝 " + st.ev.type : subs[0] || (x.changes[0] ? x.changes[0].type : "");
         h += '<td data-date="' + d.date + '" class="' + (st.off ? "off" : st.chg ? "chg" : "") + '" style="--h:' + hue(t) + '" title="' + esc(subs.join(" / ")) + '">' + esc(t) + (subs.length > 1 ? " +" + (subs.length - 1) : "") + '</td>';
       });
       h += '</tr>';

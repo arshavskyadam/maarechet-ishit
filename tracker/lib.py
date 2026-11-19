@@ -52,6 +52,25 @@ def hours_label(hours):
     return ", ".join(parts)
 
 
+EVENT_TYPES = ("מבחן", "אירוע", "טיול", "פעילות")
+
+
+def is_event(change):
+    return any(k in (change.get("type") or "") for k in EVENT_TYPES)
+
+
+def cancel_kind(l):
+    """Why a lesson is off the timetable: an exam or event in its place, a stand-in, or really cancelled.
+    An exam or an event must never read as a cancellation."""
+    for c in l.get("changes", []):
+        if is_event(c):
+            return f"{c['type']} במקום השיעור"
+    for c in l.get("changes", []):
+        if "מילוי מקום" in (c.get("type") or ""):
+            return "מילוי מקום"
+    return "לא מתקיים"
+
+
 def dm(iso):
     return f"{iso[8:10]}.{iso[5:7]}"
 
@@ -66,10 +85,11 @@ def homeroom_line(hr, day):
         end += f" (בדרך כלל {reg['end']})"
     lines = [f"🏫 {hr['class']}: {end}"]
     reasons = sorted({fill(c["text"]) for c in info["changes"] if c["type"] != "מילוי מקום"})
-    if info["removed"]:
-        lines.append(f"   לא מתקיים: שעות {hours_label([r['hour'] for r in info['removed']])}"
-                     + (f" — {', '.join(reasons)}" if reasons else ""))
-    elif reasons:
+    covered = {c["hour"] for c in info["changes"] if is_event(c) or c["type"] == "מילוי מקום"}
+    off = [r["hour"] for r in info["removed"] if r["hour"] not in covered]
+    if off:
+        lines.append(f"   לא מתקיים: שעות {hours_label(off)}")
+    if reasons:
         lines.append(f"   {', '.join(reasons)}")
     fills = sorted({fill(c["text"]) for c in info["changes"] if c["type"] == "מילוי מקום"})
     if fills:
@@ -106,7 +126,9 @@ def morning_summary(latest, today):
         where = (", ".join(b["classes"]) + " · ") if b["classes"] else ""
         notes = sorted({fill(c["text"]) for c in b["changes"]})
         if b["status"] == "cancelled":
-            lines.append(f"❌ {b['start']} {where}{b['subject']} — לא מתקיים" + (f" ({', '.join(notes)})" if notes else ""))
+            kind = cancel_kind(b)
+            mark = "📝" if kind.endswith("במקום השיעור") else "🔄" if kind == "מילוי מקום" else "❌"
+            lines.append(f"{mark} {b['start']} {where}{b['subject']} — {kind}" + (f" ({', '.join(notes)})" if notes else ""))
         else:
             lines.append(f"{b['start']}–{b['end']} {where}{b['subject']}" + (f" ({', '.join(notes)})" if notes else ""))
     # Exams in the teacher's classes, and events that fall on one of the teacher's lessons.
@@ -145,12 +167,12 @@ def diff(old, new, today):
             continue
         status = l.get("status", "regular")
         if k not in old_by:
-            found.append({"kind": "לא מתקיים" if status == "cancelled" else "נוסף", "date": l["date"],
+            found.append({"kind": cancel_kind(l) if status == "cancelled" else "נוסף", "date": l["date"],
                           "text": describe(l) + reasons(l)})
             continue
         before = old_by[k]
         if before.get("status", "regular") != status:
-            found.append({"kind": "לא מתקיים" if status == "cancelled" else "חזר למערכת", "date": l["date"],
+            found.append({"kind": cancel_kind(l) if status == "cancelled" else "חזר למערכת", "date": l["date"],
                           "text": describe(l) + reasons(l)})
         for field, label in (("classes", "כיתות"), ("rooms", "חדר"), ("co_teachers", "מורים שותפים")):
             was, now = names(before.get(field, [])), names(l[field])
@@ -190,9 +212,16 @@ def diff(old, new, today):
                               "text": f"{cls} מסיימת {now['end'] if now else 'ללא לימודים'} (קודם {was['end'] if was else 'ללא לימודים'})"})
             old_removed = {(r["hour"], r["subject"], r["teacher"]) for r in before.get("removed", [])}
             gone = [r for r in info["removed"] if (r["hour"], r["subject"], r["teacher"]) not in old_removed]
-            if gone:
+            events = {c["hour"]: c for c in info["changes"] if is_event(c)}
+            subbed = {c["hour"] for c in info["changes"] if c["type"] == "מילוי מקום"}
+            really = [r for r in gone if r["hour"] not in events and r["hour"] not in subbed]
+            instead = [r for r in gone if r["hour"] in events]
+            if really:
                 found.append({"kind": "כיתת חינוך", "date": day,
-                              "text": f"{cls} · לא מתקיים: " + ", ".join(f"שעה {r['hour']} {r['subject']}" for r in gone[:6])})
+                              "text": f"{cls} · לא מתקיים: " + ", ".join(f"שעה {r['hour']} {r['subject']}" for r in really[:6])})
+            if instead:
+                found.append({"kind": "כיתת חינוך", "date": day,
+                              "text": f"{cls} · " + ", ".join(f"שעה {r['hour']}: {events[r['hour']]['type']} במקום {r['subject']}" for r in instead[:6])})
             old_changes = {(c["hour"], c["text"]) for c in before.get("changes", [])}
             # Fill-ins don't move the end of the day, so they wait for the morning summary.
             new_changes = [c for c in info["changes"] if (c["hour"], c["text"]) not in old_changes and c["type"] != "מילוי מקום"]
