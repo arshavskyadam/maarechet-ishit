@@ -533,10 +533,12 @@ def main():
     # first tab of their board.
     known = site_teachers(raw) if raw else set()
     by_tokens = {frozenset(t.split()): t for t in known}
-    shown = {p["name"] for p in people}
+    shown = {p["name"]: p["id"] for p in people}
     commander_ids = {}
     for t in team_defs.values():
         c = t.get("commander")
+        if c and c in shown and raw:  # a commander who is also on the staff list: their page is already built
+            add_grade_agenda(shown[c], t.get("grades", []), raw, now)
         if not c or c in shown or c in commander_ids:
             continue
         site_name = c if c in known else by_tokens.get(frozenset(c.split()))
