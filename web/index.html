@@ -242,6 +242,9 @@ table.week .d { display: block; color: var(--duty); font-weight: 600; }
 .crow.off .flag { color: var(--bad); }
 .crow.chg { background: var(--warn-soft); }
 .crow.off { background: var(--bad-soft); }
+.crow.ev { background: var(--accent-soft); }
+.crow.ev .sb { color: var(--accent); font-weight: 700; }
+.crow.ev .flag { color: var(--muted); }
 .crow.free summary { cursor: default; }
 .crow.free .sb { color: var(--muted); font-weight: 400; }
 .crow .more { padding: 0 12px 10px calc(5em + 20px); display: grid; gap: 4px; font-size: .84rem; }
@@ -1296,12 +1299,14 @@ function startApp(DATA, TEAM) {
       var title = subs.length > 2 ? subs.slice(0, 2).join(" / ") + " +" + (subs.length - 2) : subs.join(" / ") || (x.changes[0] ? fill(x.changes[0].text) : "");
       // One group out of several (e.g. one math level) dropped: name that group; the rest goes on.
       var gone = x.lessons.length ? x.removed.filter(function (r) { return !x.changes.some(function (c) { return String(c.text || "").indexOf(r.teacher) >= 0 && /מילוי מקום/.test(c.type || ""); }); }) : [];
-      var flag = st.off ? "לא מתקיים" : st.ev && !x.lessons.length ? st.ev.type + " במקום השיעור: " + fill(st.ev.text) : gone.length ? "בוטל: " + gone[0].subject + " · " + gone[0].teacher + (gone.length > 1 ? " ועוד " + (gone.length - 1) : "") + " · השאר כרגיל"
+      var evOnly = st.ev && !x.lessons.length;  // the whole class sits an exam or has an event: that is the period
+      if (evOnly) title = (st.ev.type === "מבחן" ? "📝 " : "📅 ") + st.ev.type + ": " + fill(st.ev.text);
+      var flag = st.off ? "לא מתקיים" : evOnly ? "במקום " + subs.join(" / ") : gone.length ? "בוטל: " + gone[0].subject + " · " + gone[0].teacher + (gone.length > 1 ? " ועוד " + (gone.length - 1) : "") + " · השאר כרגיל"
         : x.changes.length ? x.changes[0].type + ": " + fill(x.changes[0].text) : x.removed.length ? "חלק מהשיעורים בוטלו" : "";
       var more = shown.map(function (l) { return '<div class="ln"><b>' + esc(l.subject) + '</b><span>' + esc(l.teacher) + (l.room ? " · חדר " + esc(l.room) : "") + '</span></div>'; }).join("") +
         x.changes.slice(st.off ? 0 : 1).map(function (c) { return '<div class="ln"><b style="color:var(--warn)">' + esc(c.type) + '</b><span>' + esc(fill(c.text)) + '</span></div>'; }).join("") +
         (x.lessons.length && x.removed.length ? x.removed.map(function (l) { return '<div class="ln"><b style="color:var(--bad)">בוטל</b><span>' + esc(l.subject) + " · " + esc(l.teacher) + '</span></div>'; }).join("") : "");
-      rows += '<details class="crow' + (st.off ? " off" : st.chg ? " chg" : "") + '"><summary><span class="hr">' + h + '</span><span class="tm">' + esc(x.start || t) + '</span><span class="sb">' + esc(title) + '</span>' +
+      rows += '<details class="crow' + (st.off ? " off" : evOnly ? " ev" : st.chg ? " chg" : "") + '"><summary><span class="hr">' + h + '</span><span class="tm">' + esc(x.start || t) + '</span><span class="sb">' + esc(title) + '</span>' +
         (flag ? '<span class="flag">' + esc(flag) + '</span>' : '<span class="tc">' + esc(teach.slice(0, 2).join(", ") + (teach.length > 2 ? " ועוד " + (teach.length - 2) : "") + (rooms.length === 1 ? " · חדר " + rooms[0] : rooms.length > 1 ? " · " + rooms.length + " חדרים" : "")) + '</span>') +
         '</summary><div class="more">' + more + '</div></details>';
     }
