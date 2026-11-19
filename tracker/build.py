@@ -502,6 +502,21 @@ def main():
         build_classes(raw, now)
     morning = args.morning or 5 <= now.hour < 8
     people = [p for p in (build_person(s, raw, extras, now, args.offline, morning) for s in staff) if p]
+    # Team commanders aren't in the staff tab, but many also teach: build their timetable too, for the
+    # first tab of their board.
+    known = site_teachers(raw) if raw else set()
+    by_tokens = {frozenset(t.split()): t for t in known}
+    shown = {p["name"] for p in people}
+    commander_ids = {}
+    for t in team_defs.values():
+        c = t.get("commander")
+        if not c or c in shown or c in commander_ids:
+            continue
+        site_name = c if c in known else by_tokens.get(frozenset(c.split()))
+        entry = build_person({"name": site_name, "as_given": c, "display": c, "code": "", "roles": ["מפקד"]},
+                             raw, extras, now, args.offline, False)
+        if entry:
+            commander_ids[c] = entry["id"]
     if people:
         by_name = {p["name"]: p["id"] for p in people}
         teams = []
@@ -509,7 +524,8 @@ def main():
             members = [{"id": by_name[m], "name": m} for m in t["members"] if m in by_name]
             if t.get("lead") in by_name:
                 teams.append({"name": team_name, "lead": by_name[t["lead"]], "members": members,
-                              "commander": t.get("commander", ""), "grades": t.get("grades", [])})
+                              "commander": t.get("commander", ""), "grades": t.get("grades", []),
+                              "commander_id": commander_ids.get(t.get("commander", "")) or by_name.get(t.get("commander", ""), "")})
         write_json(DOCS / "data" / "staff.json",
                    {"updated": now.isoformat(timespec="minutes"), "people": people, "teams": teams, "api": CONFIG.get("api_url", ""),
                     "cmd_hash": CONFIG.get("commander_hash", "")})
