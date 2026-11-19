@@ -25,7 +25,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 from lib import (diff, dm, fill, homeroom_line, load_json, morning_summary, notify_ntfy,  # noqa: E402
                  todays_changes, write_json)
-from scrape import ISRAEL_TZ, collect, homeroom_info, scrape  # noqa: E402
+from scrape import ISRAEL_TZ, collect, fetch_agenda, homeroom_info, scrape  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 DOCS = ROOT / "docs"
@@ -175,6 +175,33 @@ def load_extras():
         # Keyed by the set of name words, so "מאי כהן" and "כהן מאי" are the same person.
         by_name.setdefault(frozenset(r["name"].split()), []).append(extra)
     return by_name
+
+
+def add_grade_agenda(pid, grades, raw, now):
+    """A commander's "exams and events" tab shows every exam and event of the team's grades."""
+    path = DOCS / "data" / f"{pid}.json"
+    data = load_json(path, {})
+    if not data:
+        return
+    today = now.date().isoformat()
+    agenda = {}
+    for c in raw["classes"]:
+        if grade_of(c["name"]) not in grades:
+            continue
+        for tab, kind in (("exams", "מבחן"), ("events", "אירוע")):
+            try:
+                items = fetch_agenda(c["id"], tab, kind)
+            except Exception as err:  # noqa: BLE001 - one class failing must not stop the build
+                print(f"note: agenda of {c['name']} not read ({err})")
+                continue
+            for it in items:
+                if it["date"] and it["date"] < today:
+                    continue
+                e = agenda.setdefault((it["kind"], it["date"], it["title"], tuple(it["hours"] or ())), {**it, "my_classes": [], "my_lessons": []})
+                if c["name"] not in e["my_classes"]:
+                    e["my_classes"].append(c["name"])
+    data["grade_agenda"] = sorted(agenda.values(), key=lambda a: (a["date"] or "", a["hours"] or [0], a["title"]))
+    write_json(path, data)
 
 
 def build_person(person, raw, extras, now, offline, morning):
@@ -517,6 +544,8 @@ def main():
                              raw, extras, now, args.offline, False)
         if entry:
             commander_ids[c] = entry["id"]
+            if raw:
+                add_grade_agenda(entry["id"], t.get("grades", []), raw, now)
     if people:
         by_name = {p["name"]: p["id"] for p in people}
         teams = []
