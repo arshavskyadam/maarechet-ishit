@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-19T12:00+02:00",
+ "updated": "2026-11-19T12:18+02:00",
  "people": [
   {
    "id": "3e03449784",
@@ -380,7 +380,8 @@
    "commander": "אלון שליו",
    "grades": [
     "ט"
-   ]
+   ],
+   "commander_id": "573b1cde45"
   },
   {
    "name": "צוות י",
@@ -418,7 +419,8 @@
    "commander": "אלקיים נטלי",
    "grades": [
     "י"
-   ]
+   ],
+   "commander_id": "0802211139"
   },
   {
    "name": "צוות יא",
@@ -464,7 +466,8 @@
    "commander": "טמנוגרדסקי שון",
    "grades": [
     "יא"
-   ]
+   ],
+   "commander_id": "7fcad7e623"
   },
   {
    "name": "צוות יב",
@@ -502,7 +505,8 @@
    "commander": "אלבר יעל",
    "grades": [
     "יב"
-   ]
+   ],
+   "commander_id": "a10ea0ecb5"
   },
   {
    "name": "צוות הנדסאים",
@@ -541,7 +545,8 @@
    "grades": [
     "יג",
     "יד"
-   ]
+   ],
+   "commander_id": "ee2b1848d2"
   }
  ],
  "api": "https://script.google.com/macros/s/AKfycbx8OtXj5G0V94MgP3gkzMEQuoDo095MwjN3F77sJU419Gz18Z1IE_Wn3BoH0DuH8Nhd_A/exec",

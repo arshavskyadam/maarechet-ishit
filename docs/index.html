@@ -519,6 +519,36 @@ function dutyBind(box, ctx) {
 }
 </script>
 <script>
+// A commander's own week: Sunday-Thursday rows of lessons, this week or the next.
+function cmdWeek(me, today, wk) {
+  function e(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  var days = ((me.latest && me.latest.days) || []).filter(function (d) { return new Date(d.date + "T12:00:00").getDay() <= 4; });
+  var weeks = [];
+  days.forEach(function (d) {
+    var dt = new Date(d.date + "T12:00:00"), sun = new Date(dt.getTime() - dt.getDay() * 864e5).toISOString().slice(0, 10);
+    var w = weeks.filter(function (x) { return x.sun === sun; })[0]; if (!w) { w = { sun: sun, days: [] }; weeks.push(w); }
+    w.days.push(d);
+  });
+  if (!weeks.length) return '<div class="empty">לא נמצאו שיעורים שלך בשחף.</div>';
+  var cur = weeks.length - 1;  // the first week that still has today or a later day
+  for (var i = weeks.length - 1; i >= 0; i--) if (weeks[i].days.some(function (d) { return d.date >= today; })) cur = i;
+  var w = weeks[Math.max(0, Math.min(cur + wk, weeks.length - 1))], idx = weeks.indexOf(w);
+  var lessons = (me.latest.lessons || []);
+  var h = '<div class="wknav clspick"><div class="g gr">' + weeks.map(function (x, i) {
+    return '<button type="button" data-wk="' + (i - cur) + '" aria-pressed="' + (i === idx) + '">' + (i === cur ? "השבוע" : i < cur ? "שבוע קודם" : "שבוע הבא") + '</button>';
+  }).join("") + '</div></div>';
+  h += w.days.map(function (d) {
+    var ls = lessons.filter(function (l) { return l.date === d.date; }).sort(function (a, b) { return a.hour - b.hour; });
+    var head = d.weekday + " · " + d.date.slice(8, 10) + "." + d.date.slice(5, 7) + (d.date === today ? " · היום" : "");
+    return '<section class="hqday"><h3>' + e(head) + '</h3>' + (d.holidays && d.holidays.length ? '<p class="muted" style="margin:0">' + e(d.holidays.join(", ")) + '</p>' : "") +
+      (ls.length ? ls.map(function (l) {
+        var st = l.status === "cancelled" ? ' style="text-decoration:line-through;color:var(--bad)"' : l.status && l.status !== "regular" ? ' style="color:var(--warn)"' : "";
+        return '<div class="r"><b>שעה ' + l.hour + '</b><span' + st + '>' + e(l.subject) + ' · ' + e((l.classes || []).join(", ")) + (l.rooms && l.rooms.length ? ' · ' + e(l.rooms.join(", ")) : "") +
+          (l.status === "cancelled" ? " (לא מתקיים)" : "") + '</span><span class="who" dir="ltr">' + e(l.start || "") + '–' + e(l.end || "") + '</span></div>';
+      }).join("") : '<p class="muted" style="margin:0">אין שיעורים</p>') + '</section>';
+  }).join("");
+  return h;
+}
 // The monthly yard-duty report of one team (for its lead and its commander). Returns "" when there is nothing yet.
 var REP_MONTHS = ["ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני", "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר"];
 function dutyReport(rep, team, month) {
@@ -1415,14 +1445,16 @@ function startApp(DATA, TEAM) {
     var box = document.getElementById("hq"), api = d.api || "";
     var today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jerusalem" }).format(new Date());
     var dow = new Date(today + "T12:00:00").getDay();
-    var state = { tab: "duty", duty: null, rem: null, chg: null };
+    var state = { tab: team.commander_id ? "week" : "duty", duty: null, rem: null, chg: null, me: null, wk: 0 };
     var BIG = /מילוי מקום|לא מתקיים|נוסף|ביטול|כיתת חינוך/;
     function draw() {
       var h = '<div class="hqbar"><b>🎖️ ' + esc(team.commander) + ' · מפקד ' + esc(team.name) + '</b><span>היום ' + today.slice(8, 10) + "." + today.slice(5, 7) + '</span><div id="cmd-push" class="btns"></div></div>' +
-        '<div class="clspick"><div class="g gr">' + [["duty", "תורני חצר"], ["rep", "📊 דוח חודשי"], ["rem", "תזכורות הצוות"], ["chg", "שינויים היום"]].map(function (t) {
+        '<div class="clspick"><div class="g gr">' + (team.commander_id ? [["week", "📅 שבוע מלא"]] : []).concat([["duty", "תורני חצר"], ["rep", "📊 דוח חודשי"], ["rem", "תזכורות הצוות"], ["chg", "שינויים היום"]]).map(function (t) {
           return '<button type="button" data-t="' + t[0] + '" aria-pressed="' + (t[0] === state.tab) + '">' + t[1] + '</button>';
         }).join("") + '</div></div>';
-      if (state.tab === "duty") {
+      if (state.tab === "week") {
+        h += state.me ? cmdWeek(state.me, today, state.wk) : '<p class="muted">טוען…</p>';
+      } else if (state.tab === "duty") {
         var day = state.duty && state.duty.days[today];
         var grades = day ? (team.grades || []).map(dGroup).filter(function (g, i, all) { return day[g] && all.indexOf(g) === i; }) : [];
         h += grades.length ? grades.map(function (g) {
@@ -1450,6 +1482,7 @@ function startApp(DATA, TEAM) {
       box.querySelector(".gr").onclick = function (e) { var b = e.target.closest("button[data-t]"); if (b) { state.tab = b.getAttribute("data-t"); draw(); } };
       if (state.tab === "duty" && api && state.duty) dutyBind(box, { api: api, date: today, duty: state.duty, by: team.commander || "", redraw: draw,
         code: function () { return code || ""; }, saveCode: function () {} });
+      var wn = box.querySelector(".wknav"); if (wn) wn.onclick = function (e) { var b = e.target.closest("button[data-wk]"); if (b) { state.wk = +b.getAttribute("data-wk"); draw(); } };
       var rp = document.getElementById("duty-report"); if (rp) rp.onclick = function (e) { var b = e.target.closest("button[data-rm]"); if (b) { state.rm = b.getAttribute("data-rm"); draw(); } };
       document.getElementById("cmd-out").onclick = function () { set("cmd", null); location.reload(); };
       cmdPush(api, team, code);
@@ -1457,6 +1490,7 @@ function startApp(DATA, TEAM) {
     json("data/duty.json").then(function (x) {
       return dutyEdits(api, today).then(function (edits) { dutyApply(x, today, edits); state.duty = x; draw(); });
     }).catch(draw);
+    if (team.commander_id) json("data/" + encodeURIComponent(team.commander_id) + ".json").then(function (x) { state.me = x; draw(); }).catch(function () { state.me = { latest: { days: [], lessons: [] } }; draw(); });
     json("data/duty_reports.json").then(function (x) { state.rep = x; draw(); }).catch(function () { state.rep = {}; draw(); });
     if (api) fetch(api, { method: "POST", body: JSON.stringify({ action: "cmd_team", code: code, team: team.name }) }).then(function (r) { return r.json(); })
       .then(function (r) { state.rem = r.ok ? r.reminders : []; draw(); }).catch(function () { state.rem = []; draw(); });

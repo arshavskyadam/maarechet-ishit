@@ -1,0 +1,467 @@
+{
+ "teacher": "אלון שליו",
+ "source": "https://techni.shahaf.site/",
+ "roles": [
+  "מפקד"
+ ],
+ "api": "https://script.google.com/macros/s/AKfycbx8OtXj5G0V94MgP3gkzMEQuoDo095MwjN3F77sJU419Gz18Z1IE_Wn3BoH0DuH8Nhd_A/exec",
+ "vapid": "BLSTofBDFtc8bRRBjrCo_C61kNXjEdxhLuyhqst7m2PiI4DohFMBiu7J4vMGBFbc0ht9vtwkHGybcxcTCpPrxCI",
+ "ends_title": "",
+ "summary_sent": "",
+ "latest": {
+  "homeroom": null,
+  "scraped_at": "2026-11-19T12:18+02:00",
+  "class_end": {},
+  "site_update": "מעודכן ל: 19.11.2026, שעה: 08:13",
+  "class_count": 30,
+  "days": [
+   {
+    "date": "2026-11-15",
+    "weekday": "יום ראשון",
+    "holidays": []
+   },
+   {
+    "date": "2026-11-16",
+    "weekday": "יום שני",
+    "holidays": [
+     "יום הזיכרון לדוד בן גוריון"
+    ]
+   },
+   {
+    "date": "2026-11-17",
+    "weekday": "יום שלישי",
+    "holidays": []
+   },
+   {
+    "date": "2026-11-18",
+    "weekday": "יום רביעי",
+    "holidays": []
+   },
+   {
+    "date": "2026-11-19",
+    "weekday": "יום חמישי",
+    "holidays": []
+   },
+   {
+    "date": "2026-11-20",
+    "weekday": "יום שישי",
+    "holidays": []
+   },
+   {
+    "date": "2026-11-22",
+    "weekday": "יום ראשון",
+    "holidays": []
+   },
+   {
+    "date": "2026-11-23",
+    "weekday": "יום שני",
+    "holidays": []
+   },
+   {
+    "date": "2026-11-24",
+    "weekday": "יום שלישי",
+    "holidays": []
+   },
+   {
+    "date": "2026-11-25",
+    "weekday": "יום רביעי",
+    "holidays": []
+   },
+   {
+    "date": "2026-11-26",
+    "weekday": "יום חמישי",
+    "holidays": []
+   },
+   {
+    "date": "2026-11-27",
+    "weekday": "יום שישי",
+    "holidays": []
+   }
+  ],
+  "lessons": [
+   {
+    "date": "2026-11-16",
+    "hour": 5,
+    "start": "11:30",
+    "end": "12:15",
+    "subject": "מעבדת תקשורת מחשבים ובקרה",
+    "status": "regular",
+    "classes": [
+     "יד'- 3"
+    ],
+    "rooms": [
+     "89 יד-3"
+    ],
+    "co_teachers": [
+     {
+      "name": "אסולין אושרת",
+      "room": ""
+     },
+     {
+      "name": "בהנסי עדי",
+      "room": ""
+     }
+    ],
+    "other_lessons": [],
+    "changes": []
+   },
+   {
+    "date": "2026-11-16",
+    "hour": 5,
+    "start": "11:30",
+    "end": "12:15",
+    "subject": "שיעור מעבדה · שיעור עיוני",
+    "status": "regular",
+    "manual": true,
+    "classes": [
+     "יד'- 3"
+    ],
+    "rooms": [
+     "89"
+    ],
+    "co_teachers": [],
+    "other_lessons": [],
+    "changes": []
+   },
+   {
+    "date": "2026-11-23",
+    "hour": 5,
+    "start": "11:30",
+    "end": "12:15",
+    "subject": "מעבדת תקשורת מחשבים ובקרה",
+    "status": "regular",
+    "classes": [
+     "יד'- 3"
+    ],
+    "rooms": [
+     "89 יד-3"
+    ],
+    "co_teachers": [
+     {
+      "name": "אסולין אושרת",
+      "room": ""
+     },
+     {
+      "name": "בהנסי עדי",
+      "room": ""
+     }
+    ],
+    "other_lessons": [],
+    "changes": []
+   },
+   {
+    "date": "2026-11-23",
+    "hour": 5,
+    "start": "11:30",
+    "end": "12:15",
+    "subject": "שיעור מעבדה · שיעור עיוני",
+    "status": "regular",
+    "manual": true,
+    "classes": [
+     "יד'- 3"
+    ],
+    "rooms": [
+     "89"
+    ],
+    "co_teachers": [],
+    "other_lessons": [],
+    "changes": []
+   }
+  ],
+  "class_changes": [],
+  "agenda": [
+   {
+    "kind": "מבחן",
+    "date": "2026-11-19",
+    "title": "מבחן ב VHDL",
+    "hours": [
+     3,
+     4
+    ],
+    "text": "19.11.2026, מבחן ב VHDL משיעור 3 עד שיעור 4 לכיתות: יד'- 3 בקבוצה של פוקס איליה, חדר: 90 מולטימדיה מכללה",
+    "my_classes": [
+     "יד'- 3"
+    ],
+    "my_lessons": []
+   },
+   {
+    "kind": "מבחן",
+    "date": "2026-11-22",
+    "title": "מבחן במעגלים",
+    "hours": [
+     7,
+     8
+    ],
+    "text": "22.11.2026, מבחן במעגלים משיעור 7 עד שיעור 8 לכיתות: יד'- 3 בקבוצה של טסליצקי מרק, חדר: 89 יד-3",
+    "my_classes": [
+     "יד'- 3"
+    ],
+    "my_lessons": []
+   },
+   {
+    "kind": "מבחן",
+    "date": "2026-11-22",
+    "title": "מבחן במעגלים כולל תוספת זמן",
+    "hours": [
+     7,
+     9
+    ],
+    "text": "22.11.2026, מבחן במעגלים כולל תוספת זמן משיעור 7 עד שיעור 9 לכיתות: יד'- 3 בקבוצה של טסליצקי מרק, חדר: 97 הקבצה מכללה",
+    "my_classes": [
+     "יד'- 3"
+    ],
+    "my_lessons": []
+   },
+   {
+    "kind": "מבחן",
+    "date": "2026-11-24",
+    "title": "מבחן בתקשורת מודרנית",
+    "hours": [
+     3,
+     4
+    ],
+    "text": "24.11.2026, מבחן בתקשורת מודרנית משיעור 3 עד שיעור 4 לכיתות: יד'- 3 בקבוצה של פיינלב מקסים, חדר: 90 מולטימדיה מכללה",
+    "my_classes": [
+     "יד'- 3"
+    ],
+    "my_lessons": []
+   },
+   {
+    "kind": "מבחן",
+    "date": "2026-11-29",
+    "title": "פעימה בפרויקטים",
+    "hours": [
+     2,
+     4
+    ],
+    "text": "29.11.2026, פעימה בפרויקטים משיעור 2 עד שיעור 4 לכיתות: יד'- 3 בקבוצה של טסליצקי מרק, חדר: 89 יד-3",
+    "my_classes": [
+     "יד'- 3"
+    ],
+    "my_lessons": []
+   },
+   {
+    "kind": "מבחן",
+    "date": "2026-11-30",
+    "title": "מבחן ב DSP",
+    "hours": [
+     1,
+     2
+    ],
+    "text": "30.11.2026, מבחן ב DSP משיעור 1 עד שיעור 2 לכיתות: יד'- 3 בקבוצה של לוי אייל, חדר: 97 הקבצה מכללה",
+    "my_classes": [
+     "יד'- 3"
+    ],
+    "my_lessons": []
+   },
+   {
+    "kind": "מבחן",
+    "date": "2026-12-02",
+    "title": "מבחן בתקשורת מחשבים",
+    "hours": [
+     3,
+     4
+    ],
+    "text": "02.12.2026, מבחן בתקשורת מחשבים משיעור 3 עד שיעור 4 לכיתות: יד'- 3 בקבוצה של טסליצקי מרק, חדר: 89 יד-3",
+    "my_classes": [
+     "יד'- 3"
+    ],
+    "my_lessons": []
+   },
+   {
+    "kind": "אירוע",
+    "date": "2026-12-21",
+    "title": "שיחות לכיתות יד - עתודה בראודה",
+    "hours": [
+     6,
+     6
+    ],
+    "text": "21.12.2026, שיחות לכיתות יד - עתודה בראודה שיעור 6 לכיתות: יד'- 1...יד'- 3",
+    "my_classes": [
+     "יד'- 3"
+    ],
+    "my_lessons": []
+   }
+  ],
+  "homerooms": []
+ },
+ "changelog": [],
+ "history": [
+  {
+   "date": "2026-11-15",
+   "weekday": "יום ראשון",
+   "holidays": [],
+   "recorded_at": "2026-11-19T12:18+02:00",
+   "lessons": []
+  },
+  {
+   "date": "2026-11-16",
+   "weekday": "יום שני",
+   "holidays": [
+    "יום הזיכרון לדוד בן גוריון"
+   ],
+   "recorded_at": "2026-11-19T12:18+02:00",
+   "lessons": [
+    {
+     "date": "2026-11-16",
+     "hour": 5,
+     "start": "11:30",
+     "end": "12:15",
+     "subject": "מעבדת תקשורת מחשבים ובקרה",
+     "status": "regular",
+     "classes": [
+      "יד'- 3"
+     ],
+     "rooms": [
+      "89 יד-3"
+     ],
+     "co_teachers": [
+      {
+       "name": "אסולין אושרת",
+       "room": ""
+      },
+      {
+       "name": "בהנסי עדי",
+       "room": ""
+      }
+     ],
+     "other_lessons": [],
+     "changes": []
+    },
+    {
+     "date": "2026-11-16",
+     "hour": 5,
+     "start": "11:30",
+     "end": "12:15",
+     "subject": "שיעור מעבדה · שיעור עיוני",
+     "status": "regular",
+     "manual": true,
+     "classes": [
+      "יד'- 3"
+     ],
+     "rooms": [
+      "89"
+     ],
+     "co_teachers": [],
+     "other_lessons": [],
+     "changes": []
+    }
+   ]
+  },
+  {
+   "date": "2026-11-17",
+   "weekday": "יום שלישי",
+   "holidays": [],
+   "recorded_at": "2026-11-19T12:18+02:00",
+   "lessons": []
+  },
+  {
+   "date": "2026-11-18",
+   "weekday": "יום רביעי",
+   "holidays": [],
+   "recorded_at": "2026-11-19T12:18+02:00",
+   "lessons": []
+  },
+  {
+   "date": "2026-11-19",
+   "weekday": "יום חמישי",
+   "holidays": [],
+   "recorded_at": "2026-11-19T12:18+02:00",
+   "lessons": []
+  },
+  {
+   "date": "2026-11-20",
+   "weekday": "יום שישי",
+   "holidays": [],
+   "recorded_at": "2026-11-19T12:18+02:00",
+   "lessons": []
+  },
+  {
+   "date": "2026-11-22",
+   "weekday": "יום ראשון",
+   "holidays": [],
+   "recorded_at": "2026-11-19T12:18+02:00",
+   "lessons": []
+  },
+  {
+   "date": "2026-11-23",
+   "weekday": "יום שני",
+   "holidays": [],
+   "recorded_at": "2026-11-19T12:18+02:00",
+   "lessons": [
+    {
+     "date": "2026-11-23",
+     "hour": 5,
+     "start": "11:30",
+     "end": "12:15",
+     "subject": "מעבדת תקשורת מחשבים ובקרה",
+     "status": "regular",
+     "classes": [
+      "יד'- 3"
+     ],
+     "rooms": [
+      "89 יד-3"
+     ],
+     "co_teachers": [
+      {
+       "name": "אסולין אושרת",
+       "room": ""
+      },
+      {
+       "name": "בהנסי עדי",
+       "room": ""
+      }
+     ],
+     "other_lessons": [],
+     "changes": []
+    },
+    {
+     "date": "2026-11-23",
+     "hour": 5,
+     "start": "11:30",
+     "end": "12:15",
+     "subject": "שיעור מעבדה · שיעור עיוני",
+     "status": "regular",
+     "manual": true,
+     "classes": [
+      "יד'- 3"
+     ],
+     "rooms": [
+      "89"
+     ],
+     "co_teachers": [],
+     "other_lessons": [],
+     "changes": []
+    }
+   ]
+  },
+  {
+   "date": "2026-11-24",
+   "weekday": "יום שלישי",
+   "holidays": [],
+   "recorded_at": "2026-11-19T12:18+02:00",
+   "lessons": []
+  },
+  {
+   "date": "2026-11-25",
+   "weekday": "יום רביעי",
+   "holidays": [],
+   "recorded_at": "2026-11-19T12:18+02:00",
+   "lessons": []
+  },
+  {
+   "date": "2026-11-26",
+   "weekday": "יום חמישי",
+   "holidays": [],
+   "recorded_at": "2026-11-19T12:18+02:00",
+   "lessons": []
+  },
+  {
+   "date": "2026-11-27",
+   "weekday": "יום שישי",
+   "holidays": [],
+   "recorded_at": "2026-11-19T12:18+02:00",
+   "lessons": []
+  }
+ ]
+}
