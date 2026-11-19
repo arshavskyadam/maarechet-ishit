@@ -431,39 +431,41 @@ def class_releases(raw, date, grade, team, members, busy, teaching, slots, peopl
         for h in p.get("homerooms", []):
             homeroom.setdefault(class_key(h), p["name"])
     kept = {r["class"]: r for r in old}
-    out, taken = [], {}
+    rows, taken = [], {}
     classes = [c["name"] for c in raw["classes"] if duty_group(grade_of(c["name"])) == grade]
     for cls in sorted(classes, key=lambda c: (len(grade_of(c)), c)):
         info = homeroom_info(raw, cls)["days"].get(date) or {}
         end = info.get("end") or info.get("last_lesson")
-        if not end:
-            continue
-        h, key = end["hour"], class_key(cls)
+        if end:
+            rows.append({"class": cls, "hour": end["hour"], "end": end["end"], "homeroom": homeroom.get(class_key(cls), ""),
+                         "regular": (info.get("regular_end") or {}).get("end", "")})
 
-        def free(m):
-            return (date, h) not in busy.get(m, set()) or key in teaching.get(m, {}).get((date, h), set())
-        hr = homeroom.get(key)
-        row = {"class": cls, "hour": h, "end": end["end"], "homeroom": hr or "",
-               "regular": (info.get("regular_end") or {}).get("end", "")}
-        if hr and free(hr):
-            row.update(people=[hr], why="מחנך")
+    def free(m, r):
+        return (date, r["hour"]) not in busy.get(m, set()) or class_key(r["class"]) in teaching.get(m, {}).get((date, r["hour"]), set())
+    # First every homeroom instructor who can release their own class...
+    for r in rows:
+        if r["homeroom"] and free(r["homeroom"], r):
+            r.update(people=[r["homeroom"]], why="מחנך")
+            taken.setdefault(r["hour"], set()).add(r["homeroom"])
+    # ...then a free team member for the rest.
+    for r in rows:
+        if "people" in r:
+            continue
+        cands = [m for m in members if free(m, r) and m not in taken.get(r["hour"], set())]
+        prev = kept.get(r["class"], {})
+        keep = [x for x in prev.get("people", []) if prev.get("why") == "פנוי" and x in cands]
+        if keep:
+            pick = keep[0]
         else:
-            cands = [m for m in members if m != hr and free(m) and m not in taken.get(h, set())]
-            prev = kept.get(cls, {})
-            keep = [x for x in prev.get("people", []) if prev.get("why") == "פנוי" and x in cands]
-            if keep:
-                pick = keep[0]
-            else:
-                cands.sort(key=lambda c: (rel_count.get(c, 0), rel_last.get(c, ""), hashlib.sha1(f"{c}|{date}|{cls}".encode()).hexdigest()))
-                pick = cands[0] if cands else None
-                if pick:
-                    rel_count[pick] = rel_count.get(pick, 0) + 1
-                    rel_last[pick] = date
-            row.update(people=[pick] if pick else [], why="פנוי",
-                       note=("המחנך/ת בשיעור" if hr else "אין מחנך/ת רשום/ה"))
-        for c in row["people"]:
-            taken.setdefault(h, set()).add(c)
-        out.append(row)
+            cands.sort(key=lambda c: (rel_count.get(c, 0), rel_last.get(c, ""), hashlib.sha1(f"{c}|{date}|{r['class']}".encode()).hexdigest()))
+            pick = cands[0] if cands else None
+            if pick:
+                rel_count[pick] = rel_count.get(pick, 0) + 1
+                rel_last[pick] = date
+        r.update(people=[pick] if pick else [], why="פנוי", note=("המחנך/ת בשיעור" if r["homeroom"] else "אין מחנך/ת רשום/ה"))
+        if pick:
+            taken.setdefault(r["hour"], set()).add(pick)
+    out = rows
     return out
 
 
