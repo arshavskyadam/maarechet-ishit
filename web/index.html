@@ -1426,11 +1426,14 @@ function startApp(DATA, TEAM) {
     }
     var rows = RS.index.map(function (c) {
       var f = RS.files[c.id]; if (!f) return "";
-      var sl = f.slots.filter(function (x) { return x.date === date && x.lessons.length; }).sort(function (a, b) { return a.hour - b.hour; });
+      // A period counts if the class is in it: a lesson, or an exam or event in place of one.
+      function evt(x) { return x.changes.filter(function (ch) { return /מבחן|אירוע|טיול|פעילות/.test(ch.type || ""); })[0]; }
+      var sl = f.slots.filter(function (x) { return x.date === date && (x.lessons.length || evt(x)); }).sort(function (a, b) { return a.hour - b.hour; });
       if (!sl.length) return '<div class="r"><b>' + esc(c.name.replace(/\s+/g, "")) + '</b><span class="muted">אין לימודים</span></div>';
       var first = sl[0], e = (f.ends || {})[date] || {}, endH = e.now ? e.now.hour : sl[sl.length - 1].hour;
       var last = f.slots.filter(function (x) { return x.date === date && x.hour === endH; })[0] || sl[sl.length - 1];
-      function dropped(x) {  // removed teachers with no stand-in in that period
+      function dropped(x) {  // removed teachers with no stand-in in that period (not when the class has an exam or event)
+        if (evt(x)) return [];
         var subs = x.changes.filter(function (ch) { return /מילוי מקום/.test(ch.type); }).map(function (ch) { return ch.text; }).join(" ");
         return x.removed.filter(function (r) { return r.teacher && subs.indexOf(r.teacher) < 0; });
       }
@@ -1444,6 +1447,9 @@ function startApp(DATA, TEAM) {
         return '🏠 הקבצה של ' + esc(r.teacher) + ' (' + esc(r.subject) + ') משתחררת ' + (pv ? "ב־" + esc(pv.end) + " (אחרי שעה " + pv.hour + ")" : "מוקדם יותר");
       }));
       var changed = e.regular && e.now && e.regular.hour !== e.now.hour ? ' <span class="sub-tag">בדרך כלל ' + esc(e.regular.end) + '</span>' : "";
+      var fe = evt(first), le = last !== first && evt(last);
+      if (fe) notes.unshift('📅 בשעה ' + first.hour + ': ' + esc(fe.type) + ' · ' + esc(fill(fe.text)));
+      if (le) notes.push('📅 בשעה ' + last.hour + ': ' + esc(le.type) + ' · ' + esc(fill(le.text)));
       return '<div class="r"><b>' + esc(c.name.replace(/\s+/g, "")) + '</b><span>מתחילה <b class="mono">' + esc(first.start) + '</b> · מסיימת <b class="mono">' + esc(e.now ? e.now.end : last.end) + '</b>' + changed +
         (notes.length ? '<br><span class="sub-tag">' + notes.join("<br>") + '</span>' : "") + '</span></div>';
     }).join("");
