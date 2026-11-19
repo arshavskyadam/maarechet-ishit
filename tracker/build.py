@@ -305,12 +305,13 @@ def build_duty(raw, now, people, team_defs):
     today = now.date().isoformat()
     path = DOCS / "data" / "duty.json"
     prev = load_json(path, {}).get("days", {})
-    busy = {}
+    busy, teaching = {}, {}
     for person in people:
         data = load_json(DOCS / "data" / f"{person['id']}.json", {})
         for l in data.get("latest", {}).get("lessons", []):
             if l.get("status") != "cancelled" and l.get("hour") is not None:
                 busy.setdefault(person["name"], set()).add((l["date"], l["hour"]))
+                teaching.setdefault(person["name"], {}).setdefault((l["date"], l["hour"]), set()).update(class_key(c) for c in l.get("classes", []))
     known = {p["name"] for p in people}
     # Only today's list: it is made on the first run of the morning and kept up to date through the day.
     dates = [today] if today in raw["days"] and now.weekday() in (6, 0, 1, 2, 3) else []
@@ -328,6 +329,15 @@ def build_duty(raw, now, people, team_defs):
     hist = load_json(hist_path, {}).get("days", {})
     month = today[:7]
     count, last = {}, {}
+    rel_count, rel_last = {}, {}  # class releases have their own fairness table
+    for d, day in hist.items():
+        if d[:7] == month and d < today:
+            for g in day.values():
+                for r in g.get("releases", []):
+                    for c in r["people"]:
+                        if r.get("why") == "פנוי":
+                            rel_count[c] = rel_count.get(c, 0) + 1
+                            rel_last[c] = max(rel_last.get(c, ""), d)
     for d, day in hist.items():
         if d[:7] == month and d < today:
             for g in day.values():
@@ -391,12 +401,14 @@ def build_duty(raw, now, people, team_defs):
                     if role:
                         slot["role"] = role
                     slots.append(slot)
-                day_out[grade] = {"team": team, "slots": sorted(slots, key=lambda x: x["hour"]),
+                releases = class_releases(raw, date, grade, team, members, busy, teaching, slots, people,
+                                          prev.get(date, {}).get(grade, {}).get("releases", []), rel_count, rel_last)
+                day_out[grade] = {"team": team, "slots": sorted(slots, key=lambda x: x["hour"]), "releases": releases,
                                   "hours": sum(1 for h, r in wanted if not r), "free": free_hours, "members": members,
                                   "free_at": {str(h): [m for m in members if (date, h) not in busy.get(m, set())] for h, r in wanted if not r}}
         days[date] = day_out
     write_json(path, {"updated": now.isoformat(timespec="minutes"), "lunch_roles": LUNCH_ROLES,
-                      "days": {d: {g: {"team": v["team"], "slots": v["slots"], "members": v["members"], "free_at": v["free_at"]}
+                      "days": {d: {g: {"team": v["team"], "slots": v["slots"], "members": v["members"], "free_at": v["free_at"], "releases": v["releases"]}
                                    for g, v in day.items()} for d, day in days.items()}})
     # Keep about two months of days; the monthly reports below are kept for good.
     hist.update(days)
@@ -405,6 +417,57 @@ def build_duty(raw, now, people, team_defs):
     write_json(hist_path, {"updated": now.isoformat(timespec="minutes"), "days": hist})
     build_duty_reports(hist, team_defs, known, now)
     print(f"duty lists for {len(dates)} days")
+
+
+def class_releases(raw, date, grade, team, members, busy, teaching, slots, people, old, rel_count, rel_last):
+    """Who releases each class of the grade at the end of its day: the homeroom instructor when free
+    (or teaching that very class then); otherwise a free team member, the one with the fewest
+    releases this month. Someone on yard duty in that period, or already releasing another class
+    then, isn't picked."""
+    homeroom = {}
+    for p in people:
+        for h in p.get("homerooms", []):
+            homeroom.setdefault(class_key(h), p["name"])
+    on_duty = {}
+    for s in slots:
+        if not s.get("role"):
+            for c in s["people"]:
+                on_duty.setdefault(s["hour"], set()).add(c)
+    kept = {r["class"]: r for r in old}
+    out, taken = [], {}
+    classes = [c["name"] for c in raw["classes"] if duty_group(grade_of(c["name"])) == grade]
+    for cls in sorted(classes, key=lambda c: (len(grade_of(c)), c)):
+        info = homeroom_info(raw, cls)["days"].get(date) or {}
+        end = info.get("end") or info.get("last_lesson")
+        if not end:
+            continue
+        h, key = end["hour"], class_key(cls)
+
+        def free(m):
+            return (date, h) not in busy.get(m, set()) or key in teaching.get(m, {}).get((date, h), set())
+        hr = homeroom.get(key)
+        row = {"class": cls, "hour": h, "end": end["end"], "homeroom": hr or "",
+               "regular": (info.get("regular_end") or {}).get("end", "")}
+        if hr and free(hr):
+            row.update(people=[hr], why="מחנך")
+        else:
+            cands = [m for m in members if m != hr and free(m) and m not in on_duty.get(h, set()) and m not in taken.get(h, set())]
+            prev = kept.get(cls, {})
+            keep = [x for x in prev.get("people", []) if prev.get("why") == "פנוי" and x in cands]
+            if keep:
+                pick = keep[0]
+            else:
+                cands.sort(key=lambda c: (rel_count.get(c, 0), rel_last.get(c, ""), hashlib.sha1(f"{c}|{date}|{cls}".encode()).hexdigest()))
+                pick = cands[0] if cands else None
+                if pick:
+                    rel_count[pick] = rel_count.get(pick, 0) + 1
+                    rel_last[pick] = date
+            row.update(people=[pick] if pick else [], why="פנוי",
+                       note=("המחנך/ת בשיעור" if hr else "אין מחנך/ת רשום/ה"))
+        for c in row["people"]:
+            taken.setdefault(h, set()).add(c)
+        out.append(row)
+    return out
 
 
 def duty_edits(today, prev_day):
