@@ -362,8 +362,7 @@ body { margin: 0; }
     <button role="tab" id="tab-agenda" aria-selected="false" data-view="agenda">מבחנים ואירועים</button>
     <button role="tab" id="tab-hist" aria-selected="false" data-view="hist">יומן</button>
     <button role="tab" id="tab-team" aria-selected="false" data-view="team" hidden>זמן לצוות</button>
-    <button role="tab" id="tab-crem" aria-selected="false" data-view="crem" hidden>תזכורות הצוות</button>
-    <button role="tab" id="tab-cchg" aria-selected="false" data-view="cchg" hidden>שינויים בצוות</button>
+    <button role="tab" id="tab-cteam" aria-selected="false" data-view="cteam" hidden>מערכת הצוות</button>
   </nav>
 
   <section id="view-day" class="lessons-view" style="display:grid; grid-template-columns:minmax(0,1fr); gap:14px">
@@ -412,8 +411,13 @@ body { margin: 0; }
     <div id="team-result"></div>
   </section>
 
-  <section id="view-crem" hidden style="display:grid; grid-template-columns:minmax(0,1fr); gap:10px"><div id="crem-body"></div></section>
-  <section id="view-cchg" hidden style="display:grid; grid-template-columns:minmax(0,1fr); gap:10px"><div id="cchg-body"></div></section>
+  <section id="view-cteam" hidden style="display:grid; grid-template-columns:minmax(0,1fr); gap:12px">
+    <div class="clspick"><div class="g gr" id="ct-pick" aria-label="בחירת מדריך"></div></div>
+    <div class="dayhead"><h2 id="ct-title"></h2>
+      <div class="seg" id="ct-nav"><button type="button" data-ct="-1">→ הקודם</button><button type="button" data-ct="1">הבא ←</button></div></div>
+    <div class="weeknav" id="ct-weeks"></div>
+    <div class="gridwrap"><table class="week" id="ct-grid"></table></div>
+  </section>
 
   <section id="view-hist" hidden style="display:grid; grid-template-columns:minmax(0,1fr); gap:10px">
     <p class="muted" style="margin:0">כל יום נשמר כאן לפי הגרסה האחרונה שנבדקה באתר.</p>
@@ -763,7 +767,7 @@ function startApp(DATA, TEAM) {
   }
 
   // ---- exams and events
-  var AG = L.agenda || [];
+  var AG = (CMD && DATA.grade_agenda) || L.agenda || [];
   function agendaHits(b) {
     return AG.filter(function (a) {
       return a.date === b.date && a.my_lessons.some(function (h) { return h >= b.firstHour && h <= b.lastHour; });
@@ -773,7 +777,7 @@ function startApp(DATA, TEAM) {
     var hrs = a.hours ? (a.hours[0] === a.hours[1] ? "שיעור " + a.hours[0] : "שיעורים " + range(a.hours[0], a.hours[1])) : "";
     return '<div class="ag' + (a.my_lessons.length ? " hit" : "") + '"><div class="top"><span class="kind' + (a.kind === "מבחן" ? " exam" : "") + '">' + esc(a.kind) + '</span><b>' + esc(a.title) + '</b>' +
       (withDate ? '<span class="mono muted">' + dm(a.date) + '</span>' : "") + (hrs ? '<span class="muted">' + hrs + '</span>' : "") + '</div>' +
-      '<div class="muted">הכיתות שלך: ' + esc(a.my_classes.join(", ")) + '</div>' +
+      '<div class="muted">' + (CMD ? "כיתות: " : "הכיתות שלך: ") + esc(a.my_classes.join(", ")) + '</div>' +
       (a.my_lessons.length ? '<div class="hitline">נופל על שיעור שלך: ' + (a.my_lessons.length > 1 ? "שעות " : "שעה ") + a.my_lessons.join(", ") + '</div>' : "") + '</div>';
   }
   function renderAgenda() {
@@ -1332,7 +1336,7 @@ function startApp(DATA, TEAM) {
 
   // ---- tabs
   function show(view) {
-    ["day", "week", "cls", "duty", "agenda", "hist", "team", "crem", "cchg"].forEach(function (v) {
+    ["day", "week", "cls", "duty", "agenda", "hist", "team", "cteam"].forEach(function (v) {
       document.getElementById("view-" + v).hidden = v !== view;
       document.getElementById("tab-" + v).setAttribute("aria-selected", String(v === view));
     });
@@ -1343,40 +1347,53 @@ function startApp(DATA, TEAM) {
     if (view === "team") renderTeam();
     if (view === "cls") renderCls();
     if (view === "duty") renderDuty();
-    if (view === "crem") renderCmdRem();
-    if (view === "cchg") renderCmdChg();
+    if (view === "cteam") renderCmdTeam();
   }
-  // ---- a team commander's own app: their timetable, plus the team's reminders and changes
-  var CREM = null;
-  function renderCmdRem() {
-    var box = document.getElementById("crem-body");
-    if (!CMD) return;
-    if (!API) { box.innerHTML = '<div class="empty">התזכורות יופיעו כשהמנוע יופעל.</div>'; return; }
-    if (!CREM) {
-      box.innerHTML = '<p class="muted">טוען…</p>';
-      fetch(API, { method: "POST", body: JSON.stringify({ action: "cmd_team", code: CMD.code, team: CMD.team }) }).then(function (r) { return r.json(); })
-        .then(function (r) { CREM = r.ok ? r.reminders : []; renderCmdRem(); }).catch(function () { CREM = []; renderCmdRem(); });
-      return;
-    }
-    var dow = new Date(todayISO + "T12:00:00").getDay();
-    var items = CREM.filter(function (x) { return x.date ? x.date === todayISO : x.dow === dow; }).sort(function (a, b) { return a.hour - b.hour; });
-    box.innerHTML = '<section class="hqday"><h3>תזכורות הצוות להיום</h3>' + (items.length ? items.map(function (x) {
-      return '<div class="r"><b>שעה ' + x.hour + '</b><span>' + esc(x.text) + '</span><span class="who">' + esc(x.name) + '</span></div>';
-    }).join("") : '<p class="muted" style="margin:0">אין תזכורות היום.</p>') + '</section>';
-  }
-  function renderCmdChg() {
-    var box = document.getElementById("cchg-body"), BIG = /מילוי מקום|לא מתקיים|נוסף|ביטול|כיתת חינוך/, seen = {}, rows = [];
-    (TEAM ? TEAM.members : []).forEach(function (m) {
-      ((m.data && m.data.changelog) || []).forEach(function (c) {
-        if (c.date !== todayISO || !BIG.test(c.kind || "")) return;
-        var t = String(c.text || ""), mm = t.match(/^(.+?)\s*<-\s*(.+)$/), text = mm ? mm[2] + " במקום " + mm[1] : t, k = m.name + c.kind + text;
-        if (!seen[k]) { seen[k] = 1; rows.push('<div class="r"><b>' + esc(m.name) + '</b><span>' + esc(c.kind) + ': ' + esc(text) + '</span></div>'); }
-      });
+  // ---- a team commander's own app: their timetable, and the team's timetables one by one
+  var CT = { i: 0, w: 0 };
+  function renderCmdTeam() {
+    var ms = (TEAM ? TEAM.members : []).filter(function (m) { return m.data; });
+    if (!ms.length) { document.getElementById("ct-grid").innerHTML = '<tr><td class="empty">אין מערכות להצגה.</td></tr>'; return; }
+    CT.i = (CT.i + ms.length) % ms.length;
+    var m = ms[CT.i], L2 = m.data.latest || {}, ls = L2.lessons || [];
+    document.getElementById("ct-pick").innerHTML = ms.map(function (x, i) { return '<button type="button" data-ci="' + i + '" aria-pressed="' + (i === CT.i) + '">' + esc(x.name) + '</button>'; }).join("");
+    document.getElementById("ct-title").textContent = m.name;
+    var wks = [];
+    (L2.days || []).forEach(function (d) {
+      var dt = new Date(d.date + "T12:00:00"); if (dt.getDay() > 4) return;
+      var sun = new Date(dt.getTime() - dt.getDay() * 864e5).toISOString().slice(0, 10);
+      var w = wks.filter(function (x) { return x.sun === sun; })[0]; if (!w) { w = { sun: sun, days: [] }; wks.push(w); } w.days.push(d);
     });
-    box.innerHTML = '<section class="hqday"><h3>שינויים במערכת של הצוות היום</h3>' + (rows.length ? rows.join("") : '<p class="muted" style="margin:0">אין שינויים היום.</p>') + '</section>';
+    var cur = 0; for (var k = wks.length - 1; k >= 0; k--) if (wks[k].days.some(function (d) { return d.date >= todayISO; })) cur = k;
+    var wi = Math.max(0, Math.min(cur + CT.w, wks.length - 1)), wk = wks[wi] || { days: [] };
+    document.getElementById("ct-weeks").innerHTML = wks.map(function (x, i) {
+      return '<button type="button" data-cw="' + (i - cur) + '" aria-pressed="' + (i === wi) + '">' + (i === cur ? "השבוע" : i > cur ? "שבוע הבא" : "שבוע קודם") + ' <span class="mono">' + dm(x.days[0].date) + '</span></button>';
+    }).join("");
+    var inWeek = ls.filter(function (l) { return wk.days.some(function (d) { return d.date === l.date; }); });
+    var hours = {}; inWeek.forEach(function (l) { hours[l.hour] = l.start; });
+    var hs = Object.keys(hours).map(Number).sort(function (a, b) { return a - b; });
+    var h = '<tr><th class="h">שעה</th>' + wk.days.map(function (d) { return '<th' + (d.date === todayISO ? ' style="color:var(--accent)"' : "") + '>' + esc(d.weekday.replace("יום ", "")) + ' <span class="mono">' + dm(d.date) + '</span>' + d.holidays.map(function (x) { return '<span class="hol">' + esc(x) + '</span>'; }).join("") + '</th>'; }).join("") + '</tr>';
+    hs.forEach(function (hr) {
+      h += '<tr><th class="h">' + hr + '<br><span style="font-size:.68rem">' + esc(hours[hr]) + '</span></th>';
+      wk.days.forEach(function (d) {
+        var here = inWeek.filter(function (l) { return l.date === d.date && l.hour === hr; });
+        if (!here.length) { h += '<td></td>'; return; }
+        var off = here.every(function (l) { return l.status === "cancelled"; });
+        h += '<td class="slot' + (off ? " cancelled" : here.some(function (l) { return l.changes.length || (l.status && l.status !== "regular"); }) ? " changed" : "") + '">' +
+          here.map(function (l) { return '<span class="s">' + esc(l.subject) + '</span>' + esc(l.classes.join(", ")) + (l.rooms && l.rooms.length ? '<br><span class="muted">' + esc(l.rooms.join(", ")) + '</span>' : "") + (l.status === "cancelled" ? ' <span class="off-tag">לא מתקיים</span>' : ""); }).join("<hr style='border:0;border-top:1px solid var(--line);margin:3px 0'>") + '</td>';
+      });
+      h += '</tr>';
+    });
+    document.getElementById("ct-grid").innerHTML = hs.length ? h : '<tr><td class="empty">אין שיעורים בשבוע הזה.</td></tr>';
   }
+  document.getElementById("ct-pick").addEventListener("click", function (e) { var b = e.target.closest("button[data-ci]"); if (b) { CT.i = +b.getAttribute("data-ci"); renderCmdTeam(); } });
+  document.getElementById("ct-nav").addEventListener("click", function (e) { var b = e.target.closest("button[data-ct]"); if (b) { CT.i += +b.getAttribute("data-ct"); renderCmdTeam(); } });
+  document.getElementById("ct-weeks").addEventListener("click", function (e) { var b = e.target.closest("button[data-cw]"); if (b) { CT.w = +b.getAttribute("data-cw"); renderCmdTeam(); } });
   if (CMD) {
-    document.getElementById("tab-crem").hidden = false; document.getElementById("tab-cchg").hidden = false;
+    // Commanders: no day view or log; the grade's exams and events; the team's timetables.
+    document.getElementById("tab-day").hidden = true; document.getElementById("tab-hist").hidden = true;
+    document.getElementById("tab-cteam").hidden = false;
+    document.querySelector("#view-agenda > p").textContent = "מבחנים ואירועים קרובים בכל הכיתות של " + (DATA.grade_label || "השכבה") + ".";
     var sw = document.getElementById("switch"), sw2 = sw.cloneNode(true);  // drop the plain "switch" handler
     sw2.textContent = "יציאה ממצב מפקד"; sw.parentNode.replaceChild(sw2, sw);
     sw2.onclick = function () { try { localStorage.removeItem("cmd"); localStorage.removeItem("me"); } catch (e) {} location.reload(); };
@@ -1402,7 +1419,7 @@ function startApp(DATA, TEAM) {
   setInterval(renderNow, 60000);
   var saved = store("view");
   if (saved === "week" || saved === "hist" || saved === "agenda" || saved === "cls" || saved === "duty" || (saved === "team" && TEAM) ||
-      ((saved === "crem" || saved === "cchg") && CMD)) show(saved);
+      (saved === "cteam" && CMD)) show(CMD && (saved === "hist") ? "week" : saved);
   else if (CMD) show("week");
 }
 
@@ -1699,6 +1716,7 @@ function startApp(DATA, TEAM) {
         document.title = "המערכת של " + d.teacher.split(" ").slice(-1)[0];
         app.hidden = false;
         d.cmd = { team: cmdTeam.name, code: cmdSess.code }; d.team_name = cmdTeam.name; d.api = d.api || st.api;
+        d.grade_label = (cmdTeam.grades || []).length ? "שכבה " + cmdTeam.grades.join(", ") : cmdTeam.name;
         return Promise.all(cmdTeam.members.map(function (m) {
           return json("data/" + encodeURIComponent(m.id) + ".json").then(function (x) { return { name: m.name, data: x }; },
             function () { return { name: m.name, data: null }; });
