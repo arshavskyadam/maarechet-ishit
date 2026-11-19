@@ -426,6 +426,10 @@ def build_duty(raw, now, people, team_defs):
     print(f"duty lists for {len(dates)} days")
 
 
+PERIOD_END = {0: "08:10", 1: "08:55", 2: "09:40", 3: "10:40", 4: "11:25", 5: "12:15", 6: "13:00",
+              7: "14:25", 8: "15:10", 9: "16:00", 10: "16:45"}
+
+
 def class_releases(raw, date, grade, team, members, busy, teaching, away, people, old, rel_count, rel_last):
     """Who releases each class of the grade at the end of its day: the homeroom instructor when free
     (or teaching that very class then); otherwise a free member of the grade's own team, the one
@@ -444,8 +448,13 @@ def class_releases(raw, date, grade, team, members, busy, teaching, away, people
         info = homeroom_info(raw, cls)["days"].get(date) or {}
         end = info.get("end") or info.get("last_lesson")
         if end:
+            # A level group (one teacher out of several) dropped in the last period with no stand-in:
+            # that group leaves a period earlier than the rest of the class.
+            subbed = " ".join(c["text"] for c in info.get("changes", []) if c["hour"] == end["hour"] and "מילוי מקום" in c["type"])
+            early = [{"subject": r["subject"], "teacher": r["teacher"], "end": PERIOD_END.get(end["hour"] - 1, "")}
+                     for r in info.get("removed", []) if r["hour"] == end["hour"] and r["teacher"] and r["teacher"] not in subbed]
             rows.append({"class": cls, "hour": end["hour"], "end": end["end"], "homeroom": homeroom.get(class_key(cls), ""),
-                         "regular": (info.get("regular_end") or {}).get("end", "")})
+                         "regular": (info.get("regular_end") or {}).get("end", ""), "early": early})
 
     def free(m, r):
         if m in away:

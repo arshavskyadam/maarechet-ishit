@@ -1415,7 +1415,8 @@ function startApp(DATA, TEAM) {
         var who = r.people.length ? (r.people[0] === ME ? '<span class="duty-tag">' + esc(r.people[0]) + ' (את/ה)</span>' : esc(r.people[0])) : '<em style="color:var(--bad);font-style:normal">אין מדריך פנוי</em>';
         var why = r.why === "מחנך" ? "מדריך/ת הכיתה" : (r.note ? "פנוי/ה · " + r.note.replace("המחנך/ת", "מדריך/ת הכיתה").replace("אין מחנך/ת רשום/ה", "אין מדריך/ת כיתה רשום/ה") : "פנוי/ה");
         var changed = r.regular && r.regular !== r.end ? ' <span class="sub-tag">במקום ' + esc(r.regular) + '</span>' : "";
-        return '<div class="r"><b>' + esc(r.class.replace(/\s+/g, "")) + '</b><span>מסיימת ב־<b class="mono">' + esc(r.end) + '</b> (שעה ' + r.hour + ')' + changed + '<br>משחרר/ת: <b>' + who + '</b></span><span class="who">' + esc(why) + '</span></div>';
+        var early = (r.early || []).map(function (x) { return '<br><span class="sub-tag">⚠️ הקבצה של ' + esc(x.teacher) + ' (' + esc(x.subject) + ') בוטלה בשעה ' + r.hour + ': משתחררת כבר ב־' + esc(x.end) + '</span>'; }).join("");
+        return '<div class="r"><b>' + esc(r.class.replace(/\s+/g, "")) + '</b><span>מסיימת ב־<b class="mono">' + esc(r.end) + '</b> (שעה ' + r.hour + ')' + changed + early + '<br>משחרר/ת: <b>' + who + '</b></span><span class="who">' + esc(why) + '</span></div>';
       }).join("") + '</section>';
     }).join("") + '<p class="muted" style="margin:0;font-size:.8rem">קודם מדריך/ת הכיתה. אם הוא/היא בשיעור או נעדר/ת היום, משחרר מדריך פנוי מהצוות של השכבה לפי טבלת צדק (מי שהכי מעט שחרר החודש). מי שמישהו ממלא את מקומו היום נחשב נעדר.</p>';
   }
