@@ -986,6 +986,24 @@ function startApp(DATA, TEAM) {
       return pr.then(function () { return call({ action: "add", name: ME, token: token, reminder: n }); });
     }, Promise.resolve()).then(syncNotes).then(done);
   }
+  // A notification about 15-35 minutes before each lesson: on for everyone unless they turn it off here.
+  function lessonToggle(box) {
+    var b = document.createElement("div"); b.className = "lessonpref"; box.appendChild(b);
+    function draw(on) {
+      b.innerHTML = '<span class="pushhint">📚 התראה לפני כל שיעור: <b>' + (on ? "פועלת" : "כבויה") + '</b></span> ' +
+        '<button type="button" class="linkmore" id="lp-go">' + (on ? "כיבוי" : "הפעלה") + '</button>';
+      document.getElementById("lp-go").onclick = function () {
+        b.querySelector("b").textContent = "שומר…";
+        call({ action: "prefs", name: ME, token: myToken(), lesson_alerts: !on }).then(function (r) {
+          if (r.ok) { store("lesson-alerts", r.lesson_alerts ? "on" : "off"); draw(r.lesson_alerts); } else draw(on);
+        }).catch(function () { draw(on); });
+      };
+    }
+    draw(store("lesson-alerts") !== "off");
+    call({ action: "prefs", name: ME, token: myToken() }).then(function (r) {
+      if (r.ok) { store("lesson-alerts", r.lesson_alerts ? "on" : "off"); draw(r.lesson_alerts); }
+    }).catch(function () {});
+  }
   // On a linked browser: a one-time code to link one more (another browser, the home-screen icon, a new phone).
   function linkMore(box) {
     var b = document.createElement("div");
@@ -1015,14 +1033,14 @@ function startApp(DATA, TEAM) {
       box.innerHTML = (myToken() ? '<span class="pushon">🔗 הטלפון מקושר למערכת שלך</span>' : '<button type="button" class="pushbtn" id="linkgo">🔗 קישור הטלפון למערכת שלי</button>') +
         (ios && !standalone ? '<p class="pushhint">🔔 כדי לקבל התראות באייפון: כפתור השיתוף ⬆️ ← "הוספה למסך הבית", ואז לפתוח את האתר מהאייקון.</p>' : "");
       var lg = document.getElementById("linkgo"); if (lg) lg.onclick = function () { bindFlow(box, pushSetup); };
-      if (myToken()) linkMore(box);
+      if (myToken()) { linkMore(box); lessonToggle(box); }
       return;
     }
     navigator.serviceWorker.register("sw.js").then(function (reg) {
       return reg.pushManager.getSubscription().then(function (sub) {
-        if (sub && myToken() && store("push-on") === ME) { box.innerHTML = '<span class="pushon">🔔 ההתראות פעילות והטלפון מקושר למערכת שלך</span>'; linkMore(box); return; }
+        if (sub && myToken() && store("push-on") === ME) { box.innerHTML = '<span class="pushon">🔔 ההתראות פעילות והטלפון מקושר למערכת שלך</span>'; linkMore(box); lessonToggle(box); return; }
         box.innerHTML = '<button type="button" class="pushbtn" id="pushgo">🔔 הפעלת התראות וקישור הטלפון</button><p class="pushhint">צעד ראשון חובה: מקשר את הטלפון למערכת שלך. מקבלים סיכום בוקר, שינויים של היום, ותזכורות ותורנויות לפני שהן מתחילות.</p>';
-        if (myToken()) linkMore(box);
+        if (myToken()) { linkMore(box); lessonToggle(box); }
         document.getElementById("pushgo").onclick = function () {
           if (!myToken()) { bindFlow(box, function () { document.getElementById("pushgo") ? null : pushSetup(); subscribe(reg, box); }); return; }
           subscribe(reg, box);

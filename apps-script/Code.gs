@@ -74,6 +74,15 @@ function handle(req) {
     CacheService.getScriptCache().remove('tries:' + name);
     return { ok: true, code: code };
   }
+  if (a === 'prefs') {  // per-person settings; for now: a notification before each lesson (on unless turned off)
+    var pt = ensureSheet('העדפות', ['שם', 'התראה לפני שיעור', 'עודכן']), pr = findRow(pt, 1, name);
+    if (typeof req.lesson_alerts === 'boolean') {
+      var v = req.lesson_alerts ? 'כן' : 'לא';
+      if (pr > 0) pt.getRange(pr, 2, 1, 2).setValues([[v, new Date()]]); else pt.appendRow([name, v, new Date()]);
+      return { ok: true, lesson_alerts: req.lesson_alerts };
+    }
+    return { ok: true, lesson_alerts: !(pr > 0 && String(pt.getRange(pr, 2).getValue()) === 'לא') };
+  }
   var rem = sheet('תזכורות');
   if (a === 'list') return { ok: true, reminders: reminders(rem, function (r) { return r.name === name; }) };
   if (a === 'add') {
@@ -120,8 +129,10 @@ function pushFeed(req) {
     return { ok: true };
   }
   var rows = subs.getDataRange().getValues().slice(1).filter(function (r) { return r[0] && r[2]; });
+  var off = ensureSheet('העדפות', ['שם', 'התראה לפני שיעור', 'עודכן']).getDataRange().getValues().slice(1)
+    .filter(function (r) { return String(r[1]) === 'לא'; }).map(function (r) { return String(r[0]); });
   return { ok: true, subs: rows.map(function (r) { return { name: r[0], sub: JSON.parse(r[2]) }; }),
-           reminders: reminders(sheet('תזכורות'), function () { return true; }) };
+           reminders: reminders(sheet('תזכורות'), function () { return true; }), lesson_off: off };
 }
 
 /** Administration staff: the code only opens every page; personal reminders stay private. */

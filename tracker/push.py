@@ -10,6 +10,7 @@ What is sent, per person, at most once each (a hashed log in docs/data/push_log.
   - any run: changes found in this run that land on today
   - any run after the morning: reminders and yard duty that start within the next hour
   - to team leads and commanders, once a month: the yard-duty report (see report_month)
+  - about 15-35 minutes before each lesson (not the first of the day), unless the person turned it off
 """
 
 import hashlib
@@ -196,6 +197,7 @@ def main():
     rmonth = report_month(now, bool(duty))
     names = {p["id"]: p["name"] for p in staff.get("people", [])}
     lead_of = {names.get(t["lead"]): t["name"] for t in staff.get("teams", [])}
+    lesson_off = set(feed.get("lesson_off", []))
     for entry in feed["subs"]:
         name, sub = entry["name"], entry["sub"]
         if name.startswith("מפקד:"):
@@ -241,6 +243,25 @@ def main():
                 if t and window[0] <= mins(t) < window[1]:
                     what = d["role"] or "תורן חצר"
                     messages.append((f"duty|{d['grade']}|{d['hour']}|{d['role']}", f"🛡️ {what} · {t}", where(d["grade"])))
+        # Before each lesson (about 15-35 minutes ahead, as the update runs every 20 minutes): on by
+        # default, each instructor can turn it off on their page. Not for the day's first lesson (the
+        # morning summary has it) nor for the second half of a double lesson.
+        if name not in lesson_off and lessons:
+            by_hour = {}
+            for l in lessons:
+                by_hour.setdefault(l["hour"], []).append(l)
+            first = min(by_hour)
+            for h, ls in sorted(by_hour.items()):
+                l = ls[0]
+                if h == first or any(p["subject"] == l["subject"] and p["classes"] == l["classes"] for p in by_hour.get(h - 1, [])):
+                    continue
+                start = l.get("start") or HOURS.get(h, "")
+                left = mins(start) - (now.hour * 60 + now.minute) if start else -1
+                if 12 <= left < 38:
+                    body = " · ".join(x for x in [l["subject"], ", ".join(l.get("classes", [])),
+                                                  ("חדר " + ", ".join(l["rooms"])) if l.get("rooms") else ""] if x)
+                    extra = [f"{c['type']}: {fill(c['text'])}" for c in l.get("changes", [])][:2]
+                    messages.append((f"lesson|{h}", f"📚 בעוד כ־{left} דקות · {start}", body + ("\n" + "\n".join(extra) if extra else "")))
         # Today's changes not sent yet, together in one message (a missed run catches up on the next).
         new = []
         for c in data.get("changelog", []):
